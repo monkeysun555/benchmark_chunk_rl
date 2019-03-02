@@ -1,8 +1,8 @@
 import numpy as np
 
-SEG_DURATION = 2000.0
-FRAG_DURATION = 1000.0
-CHUNK_DURATION = 500.0
+SEG_DURATION = 1000.0
+# FRAG_DURATION = 1000.0
+CHUNK_DURATION = 200.0
 SERVER_START_UP_TH = 2000.0				# <========= TO BE MODIFIED. TEST WITH DIFFERENT VALUES
 
 # CHUNK_IN_SEG = int(SEG_DURATION/CHUNK_DURATION)		# 4
@@ -18,22 +18,24 @@ BITRATE = [300.0, 500.0, 1000.0, 2000.0, 3000.0, 6000.0]
 
 BITRATE_LOW_NOISE = 0.7
 BITRATE_HIGH_NOISE = 1.3
-RATIO_LOW = 2.0
-RATIO_HIGH = 10.0
+RATIO_LOW_2 = 2.0				# This is the lowest ratio between first chunk and the sum of all others
+RATIO_HIGH_2 = 10.0			# This is the highest ratio between first chunk and the sum of all others
+RATIO_LOW_5 = 0.75				# This is the lowest ratio between first chunk and the sum of all others
+RATIO_HIGH_5 = 1.0			# This is the highest ratio between first chunk and the sum of all others
 EST_LOW_NOISE = 0.98
 EST_HIGH_NOISE = 1.02
 
 
 class Live_Server(object):
-	def __init__(self, seg_duration, frag_duration, chunk_duration, start_up_th):
+	def __init__(self, seg_duration, chunk_duration, start_up_th):
 		self.seg_duration = seg_duration
-		self.frag_duration = frag_duration
+		# self.frag_duration = frag_duration
 		self.chunk_duration = chunk_duration
-		self.frag_in_seg = seg_duration/frag_duration
-		self.chunk_in_frag = frag_duration/chunk_duration
+		# self.frag_in_seg = seg_duration/frag_duration
+		# self.chunk_in_frag = frag_duration/chunk_duration
 		self.chunk_in_seg = seg_duration/chunk_duration
 
-		self.time = start_up_th + np.random.randint(1,frag_duration)		# start from 2000ms	to 3000.0
+		self.time = start_up_th + np.random.randint(1,seg_duration)
 		self.start_up_th = start_up_th
 		self.current_seg_idx = -1	# For initial
 		self.current_chunk_idx = 0
@@ -41,6 +43,24 @@ class Live_Server(object):
 		self.current_seg_size = [[] for i in range(len(BITRATE))]
 		# self.delay_tol = start_up_th + add_delay
 		self.encoding_update(0.0, self.time)
+		# for real system model trainning
+		self.next_delivery = []
+		self.generate_next_delivery()
+
+	def generate_next_delivery(self):
+		deliver_chunks = []
+		deliver_chunks.append(self.chunks.pop(0))
+		deliver_end = 0
+		for i in range(len(self.chunks)):
+			if not self.chunks[i][0] == deliver_chunks[-1][0]:
+				break
+			deliver_end += 1
+		deliver_chunks.extend(self.chunks[:deliver_end])
+		del self.chunks[:deliver_end]
+		self.next_delivery.extend(deliver_chunks[0][:2])
+		self.next_delivery.append(deliver_chunks[-1][1])
+		for i in range(len(BITRATE)):
+			self.next_delivery.append(np.sum([chunk[2][i] for chunk in deliver_chunks]))
 
 	def encoding_update(self, starting_time, end_time):
 		temp_time = starting_time
@@ -51,6 +71,7 @@ class Live_Server(object):
 			# Generate chunks and insert to encoding buffer
 			temp_time = next_time
 			if next_time%self.seg_duration == self.chunk_duration:
+			# If it is the first chunk in a seg
 				self.current_seg_idx += 1
 				self.current_chunk_idx = 0
 				self.generate_chunk_size()
@@ -71,6 +92,8 @@ class Live_Server(object):
 		pre_time = self.time
 		self.time += downloadig_time
 		self.encoding_update(pre_time, self.time)
+		# Generate new delivery for next
+		self.generate_next_delivery()
 
 		# # Check delay threshold
 		# # A: Triggered by server sice, not reasonable
@@ -92,7 +115,7 @@ class Live_Server(object):
 		new_heading_time = 0.0
 		missing_count = 0
 		# Modified for both 200 and 500 ms
-		num_chunks = int((self.time%self.frag_duration)/self.chunk_duration)
+		num_chunks = int((self.time%self.seg_duration)/self.chunk_duration)
 		target_encoding_len = self.start_up_th/self.chunk_duration + num_chunks
 		# Old, for 500
 		# if self.time%self.frag_duration >= CHUNK_DURATION:
@@ -104,38 +127,41 @@ class Live_Server(object):
 			self.chunks.pop(0)
 			missing_count += 1
 		new_heading_time = self.chunks[0][0] * self.seg_duration + self.chunks[0][1] * self.chunk_duration
-		assert self.chunks[0][1]%self.chunk_in_frag == 0
+		assert self.chunks[0][1] == 0
+		self.generate_next_delivery()
 		return new_heading_time, missing_count
 
 	# chunk size for next/current segment
 	def generate_chunk_size(self):
 		self.current_seg_size = [[] for i in range(len(BITRATE))]
-		for i in range(int(self.frag_in_seg)):
-			# Initial coef, all bitrate share the same coef 
-			encoding_coef = np.random.uniform(BITRATE_LOW_NOISE, BITRATE_HIGH_NOISE)
-			estimate_seg_size = [x * encoding_coef for x in BITRATE]
-			# There is still noise for prediction, all bitrate cannot share the same coef exactly same
-			seg_size = [np.random.uniform(EST_LOW_NOISE*x, EST_HIGH_NOISE*x) for x in estimate_seg_size]
 
-			if self.chunk_in_frag == 2:
-			# Distribute size for chunks, currently, it should depend on chunk duration (200 or 500)
-				ratio = np.random.uniform(RATIO_LOW, RATIO_HIGH)
-				seg_ratio = [np.random.uniform(EST_LOW_NOISE*ratio, EST_HIGH_NOISE*ratio) for x in range(len(BITRATE))]
-				for i in range(len(seg_ratio)):
-					temp_ratio = seg_ratio[i]
-					temp_aux_chunk_size = seg_size[i]/(1+temp_ratio)
-					temp_ini_chunk_size = seg_size[i] - temp_aux_chunk_size
-					self.current_seg_size[i].extend((temp_ini_chunk_size, temp_aux_chunk_size))
-			# if 200ms, needs to be modified, not working
-			else:
-				assert 1 == 0
-				ratio = np.random.uniform(RATIO_LOW, RATIO_HIGH)
-				seg_ratio = [np.random.uniform(EST_LOW_NOISE*ratio, EST_HIGH_NOISE*ratio) for x in range(len(BITRATE))]
-				for i in range(len(seg_ratio)):
-					temp_ratio = seg_ratio[i]
-					temp_aux_chunk_size = seg_size[i]/(1+temp_ratio)
-					temp_ini_chunk_size = seg_size[i] - temp_aux_chunk_size
-					self.current_seg_size[i].extend((temp_ini_chunk_size, temp_aux_chunk_size))
+		# Initial coef, all bitrate share the same coef 
+		encoding_coef = np.random.uniform(BITRATE_LOW_NOISE, BITRATE_HIGH_NOISE)
+		estimate_seg_size = [x * encoding_coef for x in BITRATE]
+		# There is still noise for prediction, all bitrate cannot share the coef exactly same
+		seg_size = [np.random.uniform(EST_LOW_NOISE*x, EST_HIGH_NOISE*x) for x in estimate_seg_size]
+
+		if self.chunk_in_seg == 2:
+		# Distribute size for chunks, currently, it should depend on chunk duration (200 or 500)
+			ratio = np.random.uniform(RATIO_LOW_2, RATIO_HIGH_2)
+			seg_ratio = [np.random.uniform(EST_LOW_NOISE*ratio, EST_HIGH_NOISE*ratio) for x in range(len(BITRATE))]
+			for i in range(len(seg_ratio)):
+				temp_ratio = seg_ratio[i]
+				temp_aux_chunk_size = seg_size[i]/(1+temp_ratio)
+				temp_ini_chunk_size = seg_size[i] - temp_aux_chunk_size
+				self.current_seg_size[i].extend((temp_ini_chunk_size, temp_aux_chunk_size))
+		# if 200ms, needs to be modified, not working
+		elif self.chunk_in_seg == 5:
+			# assert 1 == 0
+			ratio = np.random.uniform(RATIO_LOW_5, RATIO_HIGH_5)
+			seg_ratio = [np.random.uniform(EST_LOW_NOISE*ratio, EST_HIGH_NOISE*ratio) for x in range(len(BITRATE))]
+			for i in range(len(seg_ratio)):
+				temp_ratio = seg_ratio[i]
+				temp_ini_chunk_size = seg_size[i] * temp_ratio / (1 + temp_ratio)
+				temp_aux_chunk_size = (seg_size[i] - temp_ini_chunk_size) / (self.chunk_in_seg - 1)
+				temp_chunks_size = [temp_ini_chunk_size]
+				temp_chunks_size.extend([temp_aux_chunk_size for _ in range(int(self.chunk_in_seg) - 1)])
+				self.current_seg_size[i].extend(temp_chunks_size)
 
 
 	def wait(self):
@@ -147,7 +173,7 @@ class Live_Server(object):
 		return time_interval 
 
 	def test_reset(self, start_up_th):
-		self.time = start_up_th + np.random.randint(1,self.frag_duration)		# start from 2000ms	
+		self.time = start_up_th + np.random.randint(1,self.seg_duration)		# start from 2000ms	
 		self.start_up_th = start_up_th
 		self.current_seg_idx = -1
 		self.current_chunk_idx = 0
@@ -157,8 +183,9 @@ class Live_Server(object):
 		# self.delay_tol = start_up_th
 
 def main():
-	server = Live_Server(seg_duration=SEG_DURATION, frag_duration=FRAG_DURATION, chunk_duration=CHUNK_DURATION, start_up_th=SERVER_START_UP_TH)
+	server = Live_Server(seg_duration=SEG_DURATION, chunk_duration=CHUNK_DURATION, start_up_th=SERVER_START_UP_TH)
 	print(server.chunks, server.time)
+	print(server.next_delivery)
 
 
 if __name__ == '__main__':

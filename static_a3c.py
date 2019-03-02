@@ -69,22 +69,24 @@ class ActorNetwork(object):
 			split_0 = tflearn.conv_1d(inputs[:, 0:1, :], 32, 4, activation='relu')			# chunk size
 			split_1 = tflearn.conv_1d(inputs[:, 1:2, :], 32, 4, activation='relu')			# download duration
 			split_2 = tflearn.conv_1d(inputs[:, 2:3, :], 32, 4, activation='relu')			# buffer size
-			split_3 = tflearn.fully_connected(inputs[:, 3:4, -1], 1, activation='relu')		# Last bitrate
+			split_3 = tflearn.conv_1d(inputs[:, 3:4, :], 32, 4, activation='relu')			# buffer size
+			split_4 = tflearn.fully_connected(inputs[:, 4:4, -1], 1, activation='relu')		# Last bitrate
 			# split_4 = tflearn.fully_connected(inputs[:, 4:5, -1], 8, activation='relu')		# accu latency
-			split_4 = tflearn.fully_connected(inputs[:, 4:5, -1], 1, activation='relu')		# sync  0/1
-			split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], 1, activation='relu')		# player state 0 or 1
-			split_6 = tflearn.fully_connected(inputs[:, 6:7, -4:], 4, activation='relu')	# server wait
-			split_7 = tflearn.fully_connected(inputs[:, 7:8, -4:], 4, activation='relu')	# freezing
+			split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], 1, activation='relu')		# sync  0/1
+			split_6 = tflearn.fully_connected(inputs[:, 6:7, -1], 1, activation='relu')		# player state 0 or 1
+			split_7 = tflearn.fully_connected(inputs[:, 7:8, -4:], 4, activation='relu')	# server wait
+			split_8 = tflearn.fully_connected(inputs[:, 8:9, -4:], 4, activation='relu')	# freezing
 
 			# split_6 = tflearn.fully_connected(inputs[:, 6:7, -1], 128, activation='relu')	# freezing count
 			# split_7 = tflearn.fully_connected(inputs[:, 7:8, -1], 128, activation='relu')	# time out count
-			split_8 = tflearn.fully_connected(inputs[:, 8:9, :A_DIM], 4, activation='relu')	# next availabel seg size 
+			# split_8 = tflearn.fully_connected(inputs[:, 8:9, :A_DIM], 4, activation='relu')	# next availabel seg size 
 
 			split_0_flat = tflearn.flatten(split_0)
 			split_1_flat = tflearn.flatten(split_1)
 			split_2_flat = tflearn.flatten(split_2)
-
-			merge_net = tflearn.merge([split_0_flat, split_1_flat, split_2_flat, split_3, split_4, split_5, split_6, split_7, split_8], 'concat')
+			split_3_flat = tflearn.flatten(split_3)
+			
+			merge_net = tflearn.merge([split_0_flat, split_1_flat, split_2_flat, split_3_flat, split_4, split_5, split_6, split_7, split_8], 'concat')
 
 			dense_net_0 = tflearn.fully_connected(merge_net, 128, activation='relu')
 			out = tflearn.fully_connected(dense_net_0, self.a_dim, activation='softmax')
@@ -174,22 +176,24 @@ class CriticNetwork(object):
 			split_0 = tflearn.conv_1d(inputs[:, 0:1, :], 32, 4, activation='relu')			# chunk size
 			split_1 = tflearn.conv_1d(inputs[:, 1:2, :], 32, 4, activation='relu')			# download duration
 			split_2 = tflearn.conv_1d(inputs[:, 2:3, :], 32, 4, activation='relu')			# buffer size
-			split_3 = tflearn.fully_connected(inputs[:, 3:4, -1], 1, activation='relu')		# Last bitrate
+			split_3 = tflearn.conv_1d(inputs[:, 3:4, :], 32, 4, activation='relu')			# buffer size
+			split_4 = tflearn.fully_connected(inputs[:, 4:4, -1], 1, activation='relu')		# Last bitrate
 			# split_4 = tflearn.fully_connected(inputs[:, 4:5, -1], 8, activation='relu')		# accu latency
-			split_4 = tflearn.fully_connected(inputs[:, 4:5, -1], 1, activation='relu')		# sync  0/1
-			split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], 1, activation='relu')		# player state 0 or 1
-			split_6 = tflearn.fully_connected(inputs[:, 6:7, -4:], 4, activation='relu')	# server wait
-			split_7 = tflearn.fully_connected(inputs[:, 7:8, -4:], 4, activation='relu')	# freezing
+			split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], 1, activation='relu')		# sync  0/1
+			split_6 = tflearn.fully_connected(inputs[:, 6:7, -1], 1, activation='relu')		# player state 0 or 1
+			split_7 = tflearn.fully_connected(inputs[:, 7:8, -4:], 4, activation='relu')	# server wait
+			split_8 = tflearn.fully_connected(inputs[:, 8:9, -4:], 4, activation='relu')	# freezing
 
 			# split_6 = tflearn.fully_connected(inputs[:, 6:7, -1], 128, activation='relu')	# freezing count
 			# split_7 = tflearn.fully_connected(inputs[:, 7:8, -1], 128, activation='relu')	# time out count
-			split_8 = tflearn.fully_connected(inputs[:, 8:9, :A_DIM], 4, activation='relu')	# next availabel seg size 
+			# split_8 = tflearn.fully_connected(inputs[:, 8:9, :A_DIM], 4, activation='relu')	# next availabel seg size 
 
 			split_0_flat = tflearn.flatten(split_0)
 			split_1_flat = tflearn.flatten(split_1)
 			split_2_flat = tflearn.flatten(split_2)
-
-			merge_net = tflearn.merge([split_0_flat, split_1_flat, split_2_flat, split_3, split_4, split_5, split_6, split_7, split_8], 'concat')
+			split_3_flat = tflearn.flatten(split_3)
+			
+			merge_net = tflearn.merge([split_0_flat, split_1_flat, split_2_flat, split_3_flat, split_4, split_5, split_6, split_7, split_8], 'concat')
 
 			dense_net_0 = tflearn.fully_connected(merge_net, 128, activation='relu')
 			out = tflearn.fully_connected(dense_net_0, 1, activation='linear')

@@ -27,21 +27,19 @@ RANDOM_SEED = 13
 RAND_RANGE = 1000
 MS_IN_S = 1000.0
 KB_IN_MB = 1000.0	# in ms
-SEG_DURATION = 2000.0
-FRAG_DURATION = 1000.0
-CHUNK_DURATION = 500.0
-CHUNK_SEG_RATIO = CHUNK_DURATION/SEG_DURATION
+SEG_DURATION = 1000.0
+# FRAG_DURATION = 1000.0
+CHUNK_DURATION = 200.0
 CHUNK_IN_SEG = SEG_DURATION/CHUNK_DURATION
-CHUNK_FRAG_RATIO = CHUNK_DURATION/FRAG_DURATION
-
+CHUNK_SEG_RATIO = CHUNK_DURATION/SEG_DURATION
 # Initial buffer length on server side
-SERVER_START_UP_TH = 1000.0				# <========= TO BE MODIFIED. TEST WITH DIFFERENT VALUES
+SERVER_START_UP_TH = 2000.0				# <========= TO BE MODIFIED. TEST WITH DIFFERENT VALUES
 # how user will start playing video (user buffer)
-USER_START_UP_TH = 1000.0
-USER_FREEZING_TOL = 3000.0
+USER_START_UP_TH = 2000.0
 # set a target latency, then use fast playing to compensate
-TARGET_LATENCY = SERVER_START_UP_TH + 0.5 * FRAG_DURATION
-USER_LATENCY_TOL = TARGET_LATENCY + 3000.0
+TARGET_LATENCY = SERVER_START_UP_TH + 0.5 * SEG_DURATION
+USER_FREEZING_TOL = 3000.0							# Single time freezing time upper bound
+USER_LATENCY_TOL = TARGET_LATENCY + 3000.0			# Accumulate latency upperbound
 
 STARTING_EPOCH = 0
 NN_MODEL = None
@@ -49,7 +47,7 @@ NN_MODEL = None
 # NN_MODEL = './results/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(STARTING_EPOCH) + '.ckpt'
 TERMINAL_EPOCH = 20000
 
-DEFAULT_ACTION = 0	# lowest bitrate of ET
+DEFAULT_ACTION = 0	# lowest bitrate
 ACTION_REWARD = 1.0 * CHUNK_SEG_RATIO	
 REBUF_PENALTY = 10.0	# for second
 SMOOTH_PENALTY = 1.0
@@ -77,10 +75,10 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 
 	# Initial server and player
 	player = live_player.Live_Player(time_traces=all_cooked_time, throughput_traces=all_cooked_bw, 
-										seg_duration=SEG_DURATION, frag_duration=FRAG_DURATION, chunk_duration=CHUNK_DURATION,
+										seg_duration=SEG_DURATION, chunk_duration=CHUNK_DURATION,
 										start_up_th=USER_START_UP_TH, freezing_tol=USER_FREEZING_TOL, latency_tol = USER_LATENCY_TOL,
 										randomSeed=agent_id)
-	server = live_server.Live_Server(seg_duration=SEG_DURATION, frag_duration=FRAG_DURATION, chunk_duration=CHUNK_DURATION, 
+	server = live_server.Live_Server(seg_duration=SEG_DURATION, chunk_duration=CHUNK_DURATION, 
 										start_up_th=SERVER_START_UP_TH)
 	initial = 1
 	# terminal = 0
@@ -119,11 +117,21 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 		latency = 0.0
 		while True:
 			# get download chunk info
+			# Have to modify here, as we can get several chunks at the same time
+			# And the recording are jointly calculated. 
 			assert len(server.chunks) >= 1
-			download_chunk_info = server.chunks[0]
-			download_chunk_size = download_chunk_info[2]
-			download_chunk_idx = download_chunk_info[1]
+
+			# Here, should get server next_delivery. Might be several chunks or a whole segment
+			# download_chunk_info = server.chunks[0]		
+			# download_chunk_size = download_chunk_info[2]
+			# download_chunk_idx = download_chunk_info[1]
+			# download_seg_idx = download_chunk_info[0]
+			download_chunk_info = server.next_delivery
 			download_seg_idx = download_chunk_info[0]
+			download_chunk_idx = download_chunk_info[1]
+			download_chunk_end_idx = download_chunk_info[2]
+			download_chunk_size = download_chunk_info[3]
+
 			server_wait_time = 0.0
 			sync = 0
 			real_chunk_size, download_duration, freezing, time_out, player_state = player.fetch(bit_rate, download_chunk_size, 
@@ -180,25 +188,30 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			state[0, -1] = real_chunk_size / KB_IN_MB 		# chunk size
 			state[1, -1] = download_duration / MS_IN_S		# downloading time
 			state[2, -1] = buffer_length / MS_IN_S			# buffer length
-			state[3, -1] = BITRATE[bit_rate] / BITRATE[0]	# video bitrate
+			state[3, -1] = download_chunk_end_idx - download_chunk_idx + 1
+			state[4, -1] = BITRATE[bit_rate] / BITRATE[0]	# video bitrate
 			# state[4, -1] = latency / MS_IN_S				# accu latency from start up
-			state[4, -1] = sync 							# whether there is resync
-			state[5, -1] = player_state						# state of player
-			state[6, -1] = server_wait_time / MS_IN_S		# time of waiting for server
-			state[7, -1] = freezing / MS_IN_S				# current freezing time
+			state[5, -1] = sync 							# whether there is resync
+			state[6, -1] = player_state						# state of player
+			state[7, -1] = server_wait_time / MS_IN_S		# time of waiting for server
+			state[8, -1] = freezing / MS_IN_S				# current freezing time
 			# generate next set of seg size
 			# if add this, this will return to environment
 			# next_chunk_size_info = server.chunks[0][2]	# not useful
 			# state[7, :A_DIM] = next_chunk_size_info		# not useful
 			# print(state)
 
-			next_chunk_idx = server.chunks[0][1]
+			# Get next chunk/chunks information
+			# Should not directly get the next one, but might be several chunks togethers
+			# next_chunk_idx = server.chunks[0][1]
+			next_chunk_idx = server.next_delivery[1]
 			if next_chunk_idx == 0 or sync:
 				# print(action_reward)
 				take_action = 1
 				r_batch.append(action_reward)
 				action_reward = 0.0
 				# If sync, might go to medium of segment, and there is no estimated chunk size
+				'''
 				next_seg_size_info = []
 				if sync and not next_chunk_idx == 0:
 					next_seg_size_info = [2 * np.sum(x) / KB_IN_MB for x in server.chunks[0][2]] 
@@ -206,6 +219,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 					next_seg_size_info = [x/KB_IN_MB for x in server.chunks[0][3]]
 
 				state[8, :A_DIM] = next_seg_size_info
+				'''
 				action_prob = actor.predict(np.reshape(state, (1, S_INFO, S_LEN)))
 				action_cumsum = np.cumsum(action_prob)
 				# print(action_prob)

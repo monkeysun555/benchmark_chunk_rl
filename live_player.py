@@ -23,7 +23,7 @@ MS_IN_S = 1000.0	# in ms
 KB_IN_MB = 1000.0	# in ms
 
 class Live_Player(object):
-	def __init__(self, time_traces, throughput_traces, seg_duration, frag_duration, chunk_duration, start_up_th, freezing_tol, latency_tol, randomSeed = RANDOM_SEED):
+	def __init__(self, time_traces, throughput_traces, seg_duration, chunk_duration, start_up_th, freezing_tol, latency_tol, randomSeed = RANDOM_SEED):
 		np.random.seed(randomSeed)
 
 		self.time_traces = time_traces
@@ -38,7 +38,7 @@ class Live_Player(object):
 		self.last_trace_time = self.time_trace[self.time_idx-1] * MS_IN_S	# in ms
 
 		self.seg_duration = seg_duration
-		self.frag_duration = frag_duration
+		# self.frag_duration = frag_duration
 		self.chunk_duration = chunk_duration
 
 		# self.frag_in_seg = seg_duration/frag_duration
