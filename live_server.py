@@ -130,7 +130,7 @@ class Live_Server(object):
 			missing_count += 1
 		new_heading_time = self.chunks[0][0] * self.seg_duration + self.chunks[0][1] * self.chunk_duration
 		assert self.chunks[0][1] == 0
-		self.generate_next_delivery()
+		# self.generate_next_delivery()
 		return new_heading_time, missing_count
 
 	# chunk size for next/current segment
@@ -182,6 +182,7 @@ class Live_Server(object):
 		self.chunks = []	# 1 for initial chunk, 0 for following chunks
 		self.current_seg_size = [[] for i in range(len(BITRATE))]
 		self.encoding_update(0.0, self.time)
+		self.next_delivery = []
 		# self.delay_tol = start_up_th
 
 def main():

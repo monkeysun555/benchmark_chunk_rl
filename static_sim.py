@@ -143,7 +143,6 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			server_time = server.update(past_time)
 			if not time_out:
 				# server.chunks.pop(0)
-				server.generate_next_delivery()
 				sync = player.check_resync(server_time)
 			else:
 				assert player.state == 0
@@ -181,6 +180,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 				assert server_wait_time < CHUNK_DURATION
 				player.wait(server_wait_time)
 				buffer_length = player.buffer
+			server.generate_next_delivery()
 			# print(bit_rate, download_duration, server_wait_time, player.buffer, \
 			# 	server.time, player.playing_time, freezing, reward, action_reward)
 
