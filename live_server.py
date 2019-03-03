@@ -95,7 +95,7 @@ class Live_Server(object):
 		self.time += downloadig_time
 		self.encoding_update(pre_time, self.time)
 		# Generate new delivery for next
-		self.generate_next_delivery()
+		# self.generate_next_delivery()
 
 		# # Check delay threshold
 		# # A: Triggered by server sice, not reasonable
