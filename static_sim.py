@@ -131,7 +131,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			download_chunk_idx = download_chunk_info[1]
 			download_chunk_end_idx = download_chunk_info[2]
 			download_chunk_size = download_chunk_info[3]
-
+			chunk_number = download_chunk_end_idx - download_chunk_idx + 1
 			server_wait_time = 0.0
 			sync = 0
 			real_chunk_size, download_duration, freezing, time_out, player_state = player.fetch(bit_rate, download_chunk_size, 
@@ -164,10 +164,10 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			log_last_bit_rate = np.log(BITRATE[last_bit_rate] / BITRATE[0])
 			last_bit_rate = bit_rate
 			# print(log_bit_rate, log_last_bit_rate)
-			reward = ACTION_REWARD * log_bit_rate \
+			reward = ACTION_REWARD * log_bit_rate * chunk_number \
 					- REBUF_PENALTY * freezing / MS_IN_S \
 					- SMOOTH_PENALTY * np.abs(log_bit_rate - log_last_bit_rate) \
-					- LONG_DELAY_PENALTY*(LONG_DELAY_PENALTY_BASE**(ReLU(latency-TARGET_LATENCY)/ MS_IN_S)-1) \
+					- LONG_DELAY_PENALTY*(LONG_DELAY_PENALTY_BASE**(ReLU(latency-TARGET_LATENCY)/ MS_IN_S)-1) * chunk_number \
 					# - UNNORMAL_PLAYING_PENALTY*(playing_speed-NORMAL_PLAYING)*download_duration/MS_IN_S
 					# - MISSING_PENALTY * missing_count
 			# print(reward)
@@ -188,7 +188,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			state[0, -1] = real_chunk_size / KB_IN_MB 		# chunk size
 			state[1, -1] = download_duration / MS_IN_S		# downloading time
 			state[2, -1] = buffer_length / MS_IN_S			# buffer length
-			state[3, -1] = download_chunk_end_idx - download_chunk_idx + 1
+			state[3, -1] = chunk_number
 			state[4, -1] = BITRATE[bit_rate] / BITRATE[0]	# video bitrate
 			# state[4, -1] = latency / MS_IN_S				# accu latency from start up
 			state[5, -1] = sync 							# whether there is resync
