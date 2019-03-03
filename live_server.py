@@ -59,9 +59,11 @@ class Live_Server(object):
 		del self.chunks[:deliver_end]
 		self.next_delivery.extend(deliver_chunks[0][:2])
 		self.next_delivery.append(deliver_chunks[-1][1])
+		delivery_sizes = []
 		for i in range(len(BITRATE)):
-			self.next_delivery.append(np.sum([chunk[2][i] for chunk in deliver_chunks]))
-
+			delivery_sizes.append(np.sum([chunk[2][i] for chunk in deliver_chunks]))
+		self.next_delivery.append(delivery_sizes)
+		
 	def encoding_update(self, starting_time, end_time):
 		temp_time = starting_time
 		while True:
