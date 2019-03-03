@@ -1,0 +1,161 @@
+WARNING:tensorflow:From /scratch/ls3817/tflearn/lib/python2.7/site-packages/tflearn/initializations.py:119: __init__ (from tensorflow.python.ops.init_ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use tf.initializers.variance_scaling instead with distribution=uniform to get equivalent behavior.
+WARNING:tensorflow:From /scratch/ls3817/CMAF/JS_model/static_a3c.py:53: calling reduce_sum (from tensorflow.python.ops.math_ops) with keep_dims is deprecated and will be removed in a future version.
+Instructions for updating:
+keep_dims is deprecated, use keepdims instead
+WARNING:tensorflow:Issue encountered when serializing data_augmentation.
+Type is unsupported, or the types of the items don't match field type in CollectionDef. Note this is a warning and probably safe to ignore.
+'NoneType' object has no attribute 'name'
+WARNING:tensorflow:Issue encountered when serializing data_preprocessing.
+Type is unsupported, or the types of the items don't match field type in CollectionDef. Note this is a warning and probably safe to ignore.
+'NoneType' object has no attribute 'name'
+WARNING:tensorflow:From /scratch/ls3817/tflearn/lib/python2.7/site-packages/tflearn/initializations.py:119: __init__ (from tensorflow.python.ops.init_ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use tf.initializers.variance_scaling instead with distribution=uniform to get equivalent behavior.
+WARNING:tensorflow:From /scratch/ls3817/tflearn/lib/python2.7/site-packages/tflearn/initializations.py:119: __init__ (from tensorflow.python.ops.init_ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use tf.initializers.variance_scaling instead with distribution=uniform to get equivalent behavior.
+WARNING:tensorflow:From /scratch/ls3817/tflearn/lib/python2.7/site-packages/tflearn/initializations.py:119: __init__ (from tensorflow.python.ops.init_ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use tf.initializers.variance_scaling instead with distribution=uniform to get equivalent behavior.
+WARNING:tensorflow:From /scratch/ls3817/tflearn/lib/python2.7/site-packages/tflearn/initializations.py:119: __init__ (from tensorflow.python.ops.init_ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use tf.initializers.variance_scaling instead with distribution=uniform to get equivalent behavior.
+WARNING:tensorflow:From /scratch/ls3817/tflearn/lib/python2.7/site-packages/tflearn/initializations.py:119: __init__ (from tensorflow.python.ops.init_ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use tf.initializers.variance_scaling instead with distribution=uniform to get equivalent behavior.
+WARNING:tensorflow:From /scratch/ls3817/tflearn/lib/python2.7/site-packages/tflearn/initializations.py:119: __init__ (from tensorflow.python.ops.init_ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use tf.initializers.variance_scaling instead with distribution=uniform to get equivalent behavior.
+WARNING:tensorflow:From /scratch/ls3817/tflearn/lib/python2.7/site-packages/tflearn/initializations.py:119: __init__ (from tensorflow.python.ops.init_ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use tf.initializers.variance_scaling instead with distribution=uniform to get equivalent behavior.
+WARNING:tensorflow:From /scratch/ls3817/tflearn/lib/python2.7/site-packages/tflearn/initializations.py:119: __init__ (from tensorflow.python.ops.init_ops) is deprecated and will be removed in a future version.
+Instructions for updating:
+Use tf.initializers.variance_scaling instead with distribution=uniform to get equivalent behavior.
+WARNING:tensorflow:From /scratch/ls3817/CMAF/JS_model/static_a3c.py:53: calling reduce_sum (from tensorflow.python.ops.math_ops) with keep_dims is deprecated and will be removed in a future version.
+Instructions for updating:
+keep_dims is deprecated, use keepdims instead
+WARNING:tensorflow:From /scratch/ls3817/CMAF/JS_model/static_a3c.py:53: calling reduce_sum (from tensorflow.python.ops.math_ops) with keep_dims is deprecated and will be removed in a future version.
+Instructions for updating:
+keep_dims is deprecated, use keepdims instead
+WARNING:tensorflow:From /scratch/ls3817/CMAF/JS_model/static_a3c.py:53: calling reduce_sum (from tensorflow.python.ops.math_ops) with keep_dims is deprecated and will be removed in a future version.
+Instructions for updating:
+keep_dims is deprecated, use keepdims instead
+WARNING:tensorflow:From /scratch/ls3817/CMAF/JS_model/static_a3c.py:53: calling reduce_sum (from tensorflow.python.ops.math_ops) with keep_dims is deprecated and will be removed in a future version.
+Instructions for updating:
+keep_dims is deprecated, use keepdims instead
+WARNING:tensorflow:From /scratch/ls3817/CMAF/JS_model/static_a3c.py:53: calling reduce_sum (from tensorflow.python.ops.math_ops) with keep_dims is deprecated and will be removed in a future version.
+Instructions for updating:
+keep_dims is deprecated, use keepdims instead
+WARNING:tensorflow:From /scratch/ls3817/CMAF/JS_model/static_a3c.py:53: calling reduce_sum (from tensorflow.python.ops.math_ops) with keep_dims is deprecated and will be removed in a future version.
+Instructions for updating:
+keep_dims is deprecated, use keepdims instead
+WARNING:tensorflow:From /scratch/ls3817/CMAF/JS_model/static_a3c.py:53: calling reduce_sum (from tensorflow.python.ops.math_ops) with keep_dims is deprecated and will be removed in a future version.
+Instructions for updating:
+keep_dims is deprecated, use keepdims instead
+WARNING:tensorflow:From /scratch/ls3817/CMAF/JS_model/static_a3c.py:53: calling reduce_sum (from tensorflow.python.ops.math_ops) with keep_dims is deprecated and will be removed in a future version.
+Instructions for updating:
+keep_dims is deprecated, use keepdims instead
+Process Process-9:
+Process Process-3:
+Traceback (most recent call last):
+Process Process-7:
+Traceback (most recent call last):
+  File "/share/apps/python/2.7.12/intel/lib/python2.7/multiprocessing/process.py", line 258, in _bootstrap
+Traceback (most recent call last):
+  File "/share/apps/python/2.7.12/intel/lib/python2.7/multiprocessing/process.py", line 258, in _bootstrap
+  File "/share/apps/python/2.7.12/intel/lib/python2.7/multiprocessing/process.py", line 258, in _bootstrap
+    self.run()
+  File "/share/apps/python/2.7.12/intel/lib/python2.7/multiprocessing/process.py", line 114, in run
+    self._target(*self._args, **self._kwargs)
+  File "static_sim.py", line 138, in agent
+    self.run()
+    self.run()
+  File "/share/apps/python/2.7.12/intel/lib/python2.7/multiprocessing/process.py", line 114, in run
+  File "/share/apps/python/2.7.12/intel/lib/python2.7/multiprocessing/process.py", line 114, in run
+    self._target(*self._args, **self._kwargs)
+    self._target(*self._args, **self._kwargs)
+  File "static_sim.py", line 138, in agent
+  File "static_sim.py", line 138, in agent
+    download_seg_idx, download_chunk_idx, take_action)
+    download_seg_idx, download_chunk_idx, take_action)
+  File "/scratch/ls3817/CMAF/JS_model/live_player.py", line 58, in fetch
+    download_seg_idx, download_chunk_idx, take_action)
+  File "/scratch/ls3817/CMAF/JS_model/live_player.py", line 58, in fetch
+  File "/scratch/ls3817/CMAF/JS_model/live_player.py", line 58, in fetch
+    chunk_size = next_chunk_set[quality]# in Kbits not KBytes
+    chunk_size = next_chunk_set[quality]# in Kbits not KBytes
+IndexError: invalid index to scalar variable.
+IndexError: invalid index to scalar variable.
+    chunk_size = next_chunk_set[quality]# in Kbits not KBytes
+IndexError: invalid index to scalar variable.
+player initial finish
+player initial finish
+player initial finish
+Process Process-6:
+Traceback (most recent call last):
+  File "/share/apps/python/2.7.12/intel/lib/python2.7/multiprocessing/process.py", line 258, in _bootstrap
+    self.run()
+  File "/share/apps/python/2.7.12/intel/lib/python2.7/multiprocessing/process.py", line 114, in run
+    self._target(*self._args, **self._kwargs)
+  File "static_sim.py", line 138, in agent
+    download_seg_idx, download_chunk_idx, take_action)
+  File "/scratch/ls3817/CMAF/JS_model/live_player.py", line 58, in fetch
+    chunk_size = next_chunk_set[quality]# in Kbits not KBytes
+IndexError: invalid index to scalar variable.
+player initial finish
+Process Process-8:
+Traceback (most recent call last):
+  File "/share/apps/python/2.7.12/intel/lib/python2.7/multiprocessing/process.py", line 258, in _bootstrap
+    self.run()
+  File "/share/apps/python/2.7.12/intel/lib/python2.7/multiprocessing/process.py", line 114, in run
+    self._target(*self._args, **self._kwargs)
+  File "static_sim.py", line 138, in agent
+    download_seg_idx, download_chunk_idx, take_action)
+  File "/scratch/ls3817/CMAF/JS_model/live_player.py", line 58, in fetch
+    chunk_size = next_chunk_set[quality]# in Kbits not KBytes
+IndexError: invalid index to scalar variable.
+player initial finish
+Process Process-5:
+Traceback (most recent call last):
+  File "/share/apps/python/2.7.12/intel/lib/python2.7/multiprocessing/process.py", line 258, in _bootstrap
+    self.run()
+  File "/share/apps/python/2.7.12/intel/lib/python2.7/multiprocessing/process.py", line 114, in run
+    self._target(*self._args, **self._kwargs)
+  File "static_sim.py", line 138, in agent
+    download_seg_idx, download_chunk_idx, take_action)
+  File "/scratch/ls3817/CMAF/JS_model/live_player.py", line 58, in fetch
+    chunk_size = next_chunk_set[quality]# in Kbits not KBytes
+IndexError: invalid index to scalar variable.
+player initial finish
+Process Process-4:
+Traceback (most recent call last):
+  File "/share/apps/python/2.7.12/intel/lib/python2.7/multiprocessing/process.py", line 258, in _bootstrap
+    self.run()
+  File "/share/apps/python/2.7.12/intel/lib/python2.7/multiprocessing/process.py", line 114, in run
+    self._target(*self._args, **self._kwargs)
+  File "static_sim.py", line 138, in agent
+    download_seg_idx, download_chunk_idx, take_action)
+  File "/scratch/ls3817/CMAF/JS_model/live_player.py", line 58, in fetch
+    chunk_size = next_chunk_set[quality]# in Kbits not KBytes
+IndexError: invalid index to scalar variable.
+player initial finish
+Process Process-2:
+Traceback (most recent call last):
+  File "/share/apps/python/2.7.12/intel/lib/python2.7/multiprocessing/process.py", line 258, in _bootstrap
+    self.run()
+  File "/share/apps/python/2.7.12/intel/lib/python2.7/multiprocessing/process.py", line 114, in run
+    self._target(*self._args, **self._kwargs)
+  File "static_sim.py", line 138, in agent
+    download_seg_idx, download_chunk_idx, take_action)
+  File "/scratch/ls3817/CMAF/JS_model/live_player.py", line 58, in fetch
+    chunk_size = next_chunk_set[quality]# in Kbits not KBytes
+IndexError: invalid index to scalar variable.
+player initial finish
+slurmstepd: error: *** JOB 15840835 ON c29-12 CANCELLED AT 2019-03-02T23:50:08 DUE TO TIME LIMIT ***
+slurmstepd: error: Exceeded step memory limit at some point.
+slurmstepd: error: This may or may not result in some failure. The SLURM utilizes Linux cgroups for resource containment. For reference please read the explanation in the bug report: https://bugs.schedmd.com/show_bug.cgi?id=3214#c4
+slurmstepd: error: Exceeded job memory limit at some point.
+slurmstepd: error: This may or may not result in some failure. The SLURM utilizes Linux cgroups for resource containment. For reference please read the explanation in the bug report: https://bugs.schedmd.com/show_bug.cgi?id=3214#c4
