@@ -52,7 +52,7 @@ class Live_Player(object):
 		self.latency_tol = latency_tol
 		print('player initial finish')
 
-	def fetch(self, quality, next_chunk_set, seg_idx, chunk_idx, take_action, playing_speed = 1.0):
+	def fetch(self, quality, next_chunk_set, seg_idx, chunk_idx, take_action, num_chunk, playing_speed = 1.0):
 		# Action initialization
 		start_state = self.state
 		chunk_size = next_chunk_set[quality]# in Kbits not KBytes
@@ -97,7 +97,7 @@ class Live_Player(object):
 			deliverable_size = throughput * duration * PACKET_PAYLOAD_PORTION	# in Kbits		
 			# Will also check whether freezing time exceeds the TOL
 			if deliverable_size + chunk_sent > chunk_size:
-				fraction = (chunk_size - chunk_sent) / (throughput*PACKET_PAYLOAD_PORTION)	# in ms, real time
+				fraction = (chunk_size - chunk_sent) / (throughput * PACKET_PAYLOAD_PORTION)	# in ms, real time
 				if self.state == 1:
 					assert freezing_fraction == 0.0
 					temp_freezing = np.maximum(fraction - self.buffer/playing_speed, 0.0)		# modified based on playing speed
@@ -119,10 +119,10 @@ class Live_Player(object):
 					self.playing_time += np.minimum(self.buffer, playing_speed*fraction)		# modified based on playing speed 
 					self.buffer = np.maximum(self.buffer - playing_speed*fraction, 0.0)			# modified based on playing speed 
 					if np.round(self.playing_time + self.buffer, 2) == np.round(chunk_start_time, 2):
-						self.buffer += self.chunk_duration
+						self.buffer += self.chunk_duration * num_chunk
 					else:
 						# Should not happen in normal case, this is constrain for training
-						self.buffer = self.chunk_duration
+						self.buffer = self.chunk_duration * num_chunk
 						self.playing_time = chunk_start_time
 					break
 				# Freezing
@@ -140,7 +140,7 @@ class Live_Player(object):
 					freezing_fraction += fraction
 					self.last_trace_time += fraction
 					downloading_fraction += fraction
-					self.buffer += self.chunk_duration
+					self.buffer += self.chunk_duration * num_chunk
 					self.playing_time = chunk_start_time
 					self.state = 1
 					break
@@ -159,7 +159,7 @@ class Live_Player(object):
 					# 	assert chunk_sent < chunk_size
 					# 	return chunk_sent, downloading_fraction, freezing_fraction, time_out, start_state
 					downloading_fraction += fraction
-					self.buffer += self.chunk_duration
+					self.buffer += self.chunk_duration * num_chunk
 					freezing_fraction += fraction
 					self.last_trace_time += fraction
 					if self.buffer >= self.start_up_th:

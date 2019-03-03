@@ -135,7 +135,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			server_wait_time = 0.0
 			sync = 0
 			real_chunk_size, download_duration, freezing, time_out, player_state = player.fetch(bit_rate, download_chunk_size, 
-																		download_seg_idx, download_chunk_idx, take_action)
+																		download_seg_idx, download_chunk_idx, take_action, chunk_number)
 			take_action = 0
 			past_time = download_duration
 			buffer_length = player.buffer
