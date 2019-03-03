@@ -2,7 +2,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=4
 #SBATCH --cpus-per-task=4
-#SBATCH --time=3:00:00
+#SBATCH --time=2:30:00
 #SBATCH --mem=4GB
 #SBATCH --job-name=seg_rl
 #SBATCH --mail-type=END
@@ -12,7 +12,7 @@
 module purge
 
 VIRTUALENV=$SCRATCH
-RUNDIR=$SCRATCH/CMAF/STATIC_RL
+RUNDIR=$SCRATCH/CMAF/JS_model
 
 cd $VIRTUALENV
 
