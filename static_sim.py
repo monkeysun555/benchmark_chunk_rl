@@ -14,7 +14,7 @@ S_LEN = 12
 A_DIM = 6	
 ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
-NUM_AGENTS = 8
+NUM_AGENTS = 1
 
 TRAIN_SEQ_LEN = 200
 MODEL_SAVE_INTERVAL = 100
@@ -119,7 +119,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			# get download chunk info
 			# Have to modify here, as we can get several chunks at the same time
 			# And the recording are jointly calculated. 
-			assert len(server.chunks) >= 1
+			# assert len(server.chunks) >= 1
 
 			# Here, should get server next_delivery. Might be several chunks or a whole segment
 			# download_chunk_info = server.chunks[0]		
@@ -140,9 +140,11 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			past_time = download_duration
 			buffer_length = player.buffer
 			# print(player.playing_time)
+			print(past_time, len(server.chunks), server.next_delivery)
 			server_time = server.update(past_time)
 			if not time_out:
 				# server.chunks.pop(0)
+				server.next_delivery = []
 				sync = player.check_resync(server_time)
 			else:
 				assert player.state == 0

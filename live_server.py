@@ -90,7 +90,7 @@ class Live_Server(object):
 		# Has nothing to do with sync, migrate to player side
 		# sync = 0	# sync play
 		# missing_count = 0
-		new_heading_time = 0.0
+		# new_heading_time = 0.0
 		pre_time = self.time
 		self.time += downloadig_time
 		self.encoding_update(pre_time, self.time)
