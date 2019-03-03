@@ -140,7 +140,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			past_time = download_duration
 			buffer_length = player.buffer
 			# print(player.playing_time)
-			print(past_time, len(server.chunks), server.next_delivery)
+			# print(past_time, len(server.chunks), server.next_delivery)
 			server_time = server.update(past_time)
 			if not time_out:
 				# server.chunks.pop(0)
