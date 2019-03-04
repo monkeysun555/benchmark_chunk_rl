@@ -9,12 +9,12 @@ import live_server
 import static_a3c as a3c
 import load
 
-S_INFO = 10
+S_INFO = 8
 S_LEN = 12
 A_DIM = 6	
 ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
-NUM_AGENTS = 8
+NUM_AGENTS = 1
 
 TRAIN_SEQ_LEN = 200
 MODEL_SAVE_INTERVAL = 100
@@ -47,13 +47,13 @@ NN_MODEL = None
 # NN_MODEL = './results/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(STARTING_EPOCH) + '.ckpt'
 TERMINAL_EPOCH = 20000
 
-DEFAULT_ACTION = 0	# lowest bitrate
+DEFAULT_ACTION = 0			# lowest bitrate
 ACTION_REWARD = 1.0 * CHUNK_SEG_RATIO	
-REBUF_PENALTY = 10.0	# for second
+REBUF_PENALTY = 10.0		# for second
 SMOOTH_PENALTY = 1.0
 LONG_DELAY_PENALTY = 1.0 * CHUNK_SEG_RATIO 
 LONG_DELAY_PENALTY_BASE = 1.2	# for second
-# MISSING_PENALTY = 2.0	# not included
+MISSING_PENALTY = 2.0			# not included
 # UNNORMAL_PLAYING_PENALTY = 1.0 * CHUNK_FRAG_RATIO
 # FAST_PLAYING = 1.1		# For 1
 # NORMAL_PLAYING = 1.0	# For 0
@@ -115,6 +115,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 		action_reward = 0.0		# Total reward is for all chunks within on segment
 		take_action = 1
 		latency = 0.0
+		missing_count = 0
 		while True:
 			# get download chunk info
 			# Have to modify here, as we can get several chunks at the same time
@@ -134,6 +135,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			chunk_number = download_chunk_end_idx - download_chunk_idx + 1
 			server_wait_time = 0.0
 			sync = 0
+			missing_count = 0
 			real_chunk_size, download_duration, freezing, time_out, player_state = player.fetch(bit_rate, download_chunk_size, 
 																		download_seg_idx, download_chunk_idx, take_action, chunk_number)
 			take_action = 0
@@ -155,7 +157,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 				sync = 1
 			if sync:
 				# To sync player, enter start up phase, buffer becomes zero
-				sync_time, _ = server.sync_encoding_buffer()
+				sync_time, missing_count = server.sync_encoding_buffer()
 				player.sync_playing(sync_time)
 				buffer_length = player.buffer
 
@@ -170,8 +172,8 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 					- REBUF_PENALTY * freezing / MS_IN_S \
 					- SMOOTH_PENALTY * np.abs(log_bit_rate - log_last_bit_rate) \
 					- LONG_DELAY_PENALTY*(LONG_DELAY_PENALTY_BASE**(ReLU(latency-TARGET_LATENCY)/ MS_IN_S)-1) * chunk_number \
+					- MISSING_PENALTY * missing_count
 					# - UNNORMAL_PLAYING_PENALTY*(playing_speed-NORMAL_PLAYING)*download_duration/MS_IN_S
-					# - MISSING_PENALTY * missing_count
 			# print(reward)
 			action_reward += reward
 
@@ -191,13 +193,13 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			state[0, -1] = real_chunk_size / KB_IN_MB 		# chunk size
 			state[1, -1] = download_duration / MS_IN_S		# downloading time
 			state[2, -1] = buffer_length / MS_IN_S			# buffer length
-			state[3, -1] = chunk_number
+			state[3, -1] = chunk_number						# number of chunk sent
 			state[4, -1] = BITRATE[bit_rate] / BITRATE[0]	# video bitrate
 			# state[4, -1] = latency / MS_IN_S				# accu latency from start up
 			state[5, -1] = sync 							# whether there is resync
-			state[6, -1] = player_state						# state of player
-			state[7, -1] = server_wait_time / MS_IN_S		# time of waiting for server
-			state[8, -1] = freezing / MS_IN_S				# current freezing time
+			# state[6, -1] = player_state						# state of player
+			state[6, -1] = server_wait_time / MS_IN_S		# time of waiting for server
+			state[7, -1] = freezing / MS_IN_S				# current freezing time
 			# generate next set of seg size
 			# if add this, this will return to environment
 			# next_chunk_size_info = server.chunks[0][2]	# not useful
@@ -238,7 +240,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 				log_file.write(str(buffer_length) + '\t' +
 								str(freezing) + '\t' +
 								str(time_out) + '\t' +
-								str(buffer_length) + '\t' +
+								# str(buffer_length) + '\t' +
 								str(server_wait_time) + '\t' +
 							    str(action_prob) + '\t' +
 								str(reward) + '\n')
@@ -247,7 +249,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 				log_file.write(str(buffer_length) + '\t' +
 								str(freezing) + '\t' +
 								str(time_out) + '\t' +
-								str(buffer_length) + '\t' +
+								# str(buffer_length) + '\t' +
 								str(server_wait_time) + '\t' +
 								str(reward) + '\n')
 				log_file.flush()

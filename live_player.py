@@ -55,7 +55,7 @@ class Live_Player(object):
 	def fetch(self, quality, next_chunk_set, seg_idx, chunk_idx, take_action, num_chunk, playing_speed = 1.0):
 		# Action initialization
 		start_state = self.state
-		chunk_size = next_chunk_set[quality]# in Kbits not KBytes
+		chunk_size = next_chunk_set[quality] # in Kbits not KBytes
 		chunk_start_time = seg_idx * self.seg_duration + chunk_idx * self.chunk_duration
 		# as mpd is based on prediction, there is noise
 		chunk_size = np.random.uniform(CHUNK_RANDOM_RATIO_LOW*chunk_size, CHUNK_RANDOM_RATIO_HIGH*chunk_size)
@@ -163,7 +163,9 @@ class Live_Player(object):
 					freezing_fraction += fraction
 					self.last_trace_time += fraction
 					if self.buffer >= self.start_up_th:
-						buffer_end_time = chunk_start_time + self.chunk_duration
+						# Because it might happen after one long freezing (not exceed freezing tol)
+						# And resync, enter initial phase
+						buffer_end_time = chunk_start_time + self.chunk_duration * num_chunk
 						self.playing_time = buffer_end_time - self.buffer
 						# print(buffer_end_time, self.buffer)
 						self.state = 1
