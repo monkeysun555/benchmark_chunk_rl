@@ -52,6 +52,7 @@ class Live_Server(object):
 		deliver_chunks.append(self.chunks.pop(0))
 		deliver_end = 0
 		for i in range(len(self.chunks)):
+			# Check how many chunks can be deliveryed together
 			if not self.chunks[i][0] == deliver_chunks[-1][0]:
 				break
 			deliver_end += 1

@@ -72,6 +72,7 @@ class Live_Player(object):
 				self.last_trace_time += rtt
 			else:
 				temp_rtt = rtt - duration
+				self.last_trace_time += duration
 				self.time_idx += 1
 				if self.time_idx >= len(self.time_trace):
 					self.time_idx = 1
