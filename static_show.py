@@ -4,27 +4,21 @@ import matplotlib.pyplot as plt
 
 SERVER_START_UP_TH = 2000.0			#<=== change this to get corresponding log files
 MS_IN_S = 1000.0
-RESULT_DIR = './test_results/' + str(int(SERVER_START_UP_TH/MS_IN_S)) + 's/'
-FIGURES_DIR = './test_figures/' + str(int(SERVER_START_UP_TH/MS_IN_S)) + 's/'
-RESULT_FILE = './test_figures/'+ str(int(SERVER_START_UP_TH/MS_IN_S)) + 's/'
-if not os.path.isdir(FIGURES_DIR):
-	os.makedirs(FIGURES_DIR)
-if not os.path.isdir(RESULT_FILE):
-	os.makedirs(RESULT_FILE)
+RESULT_DIR = './test_results/'
+FIGURES_DIR = './test_figures/'
+RESULT_FILE = './test_figures/'
+
        
-PLT_BUFFER_A = 1e-5	#ms
+PLT_BUFFER_A = 1e-5		#ms
 MS_IN_S = 1000.0
+KB_IN_MB = 1000.0
 SAVE = 1
 
-SEG_DURATION = 2000.0
-FRAG_DURATION = 1000.0
-CHUNK_DURATION = 500.0
+SEG_DURATION = 1000.0
+CHUNK_DURATION = 200.0
 START_UP_TH = 2000.0
 
-FRAG_SEG_RATIO = FRAG_DURATION/SEG_DURATION
 CHUNK_IN_SEG = int(SEG_DURATION/CHUNK_DURATION)		# 4
-CHUNK_IN_FRAG = int(FRAG_DURATION/FRAG_DURATION)	# 2
-FRAG_IN_SEG = int(SEG_DURATION/FRAG_DURATION)		# 2
 
 def plt_fig(trace, data_name, data_type):
 	# print(tp_trace)
@@ -60,13 +54,38 @@ def plt_fig_full(trace, data_name, data_type):
 	curr_x = CHUNK_DURATION/MS_IN_S
 	for i in range(len(trace)):
 		x_value.append(curr_x)
-		curr_x += CHUNK_DURATION/MS_IN_S
+		curr_x += SEG_DURATION/MS_IN_S
 	p = plt.figure(figsize=(20,5))
 	plt.plot(x_value, trace, color='chocolate', label=data_name + '_' + data_type, linewidth=1.5,alpha=0.9)
 	plt.legend(loc='upper right',fontsize=30)
 	plt.grid(linestyle='dashed', axis='y',linewidth=1.5, color='gray')
-	plt.axis([0, int(len(trace)/FRAG_IN_SEG), y_axis_lower, y_axis_upper])
-	plt.xticks(np.arange(0, int(len(trace)/FRAG_IN_SEG)+1, 50))
+	plt.axis([0, int(len(trace)/SEG_DURATION*MS_IN_S), y_axis_lower, y_axis_upper])
+	plt.xticks(np.arange(0, int(len(trace)/SEG_DURATION*MS_IN_S)+1, 50))
+	# plt.yticks(np.arange(200, 1200+1, 200))
+	plt.tick_params(labelsize=20)
+	plt.close()
+	return p
+
+def plt_fig_mix_bw_action(trace1, trace2, data_name, data_type1, data_type2):
+	# type1: tp,  type2: bitrate
+	y_axis_upper = 10000.0
+	# For negative reward
+	# y_axis_lower = np.floor(np.minimum(np.min(trace)*1.1,0.0))
+	y_axis_lower = 0.0
+
+	x_value = []
+	curr_x = 0.0
+	for i in range(len(trace2)):
+		x_value.append(curr_x)
+		curr_x += SEG_DURATION/MS_IN_S
+	p = plt.figure(figsize=(20,5))
+	plt.plot(x_value, trace2, color='chocolate', label=data_name + '_' + data_type2, linewidth=1.5,alpha=0.9)
+	plt.plot(range(1,len(trace1)+1), trace1*KB_IN_MB, color='blue', label=data_name + '_' + data_type1, linewidth=1.5,alpha=0.9)
+
+	plt.legend(loc='upper right',fontsize=30)
+	plt.grid(linestyle='dashed', axis='y',linewidth=1.5, color='gray')
+	plt.axis([0, int(len(trace2)/SEG_DURATION*MS_IN_S), y_axis_lower, y_axis_upper])
+	plt.xticks(np.arange(0, int(len(trace2)/SEG_DURATION*MS_IN_S)+1, 20))
 	# plt.yticks(np.arange(200, 1200+1, 200))
 	plt.tick_params(labelsize=20)
 	plt.close()
@@ -248,6 +267,12 @@ def bar_missing(time_trace, sync_trace, missing_trace, data_name, data_type):
 
 
 def main():
+
+	if not os.path.isdir(FIGURES_DIR):
+		os.makedirs(FIGURES_DIR)
+	if not os.path.isdir(RESULT_FILE):
+		os.makedirs(RESULT_FILE)
+
 	results = os.listdir(RESULT_DIR)
 	file_records = []
 	for data in results:
@@ -271,7 +296,7 @@ def main():
 	server_wait_figs = []
 	# missing_figs = []
 	speed_figs = []
-
+	server_mix_figs = []
 
 	# For numericals
 	n_files = ['files']
@@ -294,7 +319,6 @@ def main():
 		records = file_records[i][1:-2]
 		data_name = file_records[i][0]
 		n_starting_time.append(starting_time)
-
 
 		#For buffer
 		bitrate_trace = [float(info[1]) for info in records]
@@ -366,6 +390,9 @@ def main():
 		# speed_fig = bar_speed(plt_time_trace, speed_trace, data_name, 'speed')
 		# speed_figs.append([data_name, 'speed', speed_fig])
 
+		server_mix_fig = plt_fig_mix_bw_action(tp_trace, bitrate_trace, data_name, 'tp', 'bitrate')
+		server_mix_figs.append([data_name, 'mix', server_mix_fig])
+
 
 	if SAVE:
 		for p in tp_figs:
@@ -391,6 +418,11 @@ def main():
 
 		# for p in speed_figs:
 		# 	p[2].savefig(FIGURES_DIR + p[0] + '_' + p[1] + '.eps', format='eps', dpi=1000, figsize=(30, 10))
+
+		for p in server_mix_figs:
+			p[2].savefig(FIGURES_DIR + p[0] + '_' + p[1] + '.eps', format='eps', dpi=1000, figsize=(30, 10))
+		
+
 
 		for i in range(len(n_files)):
 			current_log = []

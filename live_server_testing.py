@@ -36,38 +36,21 @@ class Live_Server(object):
 
 		self.time = start_up_th + np.random.randint(1,seg_duration)
 		self.start_up_th = start_up_th
-		self.current_seg_idx = None
-		self.current_chunk_idx = None
-		self.chunks = None	# 1 for initial chunk, 0 for following chunks
-		self.current_seg_size = None
-		# self.encoding_update(0.0, self.time)
-		self.next_delivery = None
-		# self.generate_next_delivery()
-		self.bitrate = None
-		self.ratio = None
-
-	def clone_from_state(self, seg_idx, end_time, bitrate, ratio):
-		# Starting_time is starting time of the chunk to be download
-		# End time is server current time
-		# This function is to generate available chunks for bitrate m
-		# Clone from different state
-		end_time = np.round(end_time, 4)
-		self.current_seg_idx = seg_idx - 1
+		self.current_seg_idx = -1
 		self.current_chunk_idx = 0
-		self.time = end_time
-		self.chunks = []
+		self.chunks = []	# 1 for initial chunk, 0 for following chunks
+		self.ratio = None
+		self.chunks = []	# 1 for initial chunk, 0 for following chunks
 		self.current_seg_size = [[] for i in range(len(BITRATE))]
-		self.next_delivery = []
-		self.bitrate = bitrate
-		self.ratio = ratio
-		starting_time = seg_idx * self.seg_duration
-		# print end_time - starting_time, " and chunk duration ", self.chunk_duration
-		# print "Server get state: ", end_time
-		assert round(end_time - starting_time, 3) >= self.chunk_duration
-		self.encoding_update(starting_time, end_time)
-		# print self.chunks, end_time
-		self.generate_next_delivery()
 
+	def set_ratio(self, ratio):
+		self.ratio = ratio
+
+	def init_encoding(self):
+		assert self.ratio
+		self.encoding_update(0.0, self.time)
+		self.next_delivery = []
+		self.generate_next_delivery()
 
 	def get_next_delivery(self):
 		return self.next_delivery
@@ -90,7 +73,9 @@ class Live_Server(object):
 		del self.chunks[:deliver_end]
 		self.next_delivery.extend(deliver_chunks[0][:2])
 		self.next_delivery.append(deliver_chunks[-1][1])
-		delivery_sizes = np.sum([chunk[2] for chunk in deliver_chunks])
+		delivery_sizes = []
+		for i in range(len(BITRATE)):
+			delivery_sizes.append(np.sum([chunk[2][i] for chunk in deliver_chunks]))
 		self.next_delivery.append(delivery_sizes)
 		
 	def encoding_update(self, starting_time, end_time):
@@ -102,16 +87,18 @@ class Live_Server(object):
 			# Generate chunks and insert to encoding buffer
 			temp_time = next_time
 			if next_time%self.seg_duration == self.chunk_duration:
-				# If it is the first chunk in a seg
-				self.current_chunk_idx = 0
+			# If it is the first chunk in a seg
 				self.current_seg_idx += 1
+				self.current_chunk_idx = 0
 				self.generate_chunk_size()
+				# print self.current_seg_size
 				self.chunks.append([self.current_seg_idx, self.current_chunk_idx, \
-									self.current_seg_size[self.current_chunk_idx],\
-									np.sum(self.current_seg_size)])	# for 2s segment
+									[chunk_size[self.current_chunk_idx] for chunk_size in self.current_seg_size],\
+									[np.sum(chunk_size) for chunk_size in self.current_seg_size]])	# for 2s segment
 			else:
 				self.current_chunk_idx += 1
-				self.chunks.append([self.current_seg_idx, self.current_chunk_idx, self.current_seg_size[self.current_chunk_idx]])
+				# print(self.current_chunk_idx, self.current_seg_size)
+				self.chunks.append([self.current_seg_idx, self.current_chunk_idx, [chunk_size[self.current_chunk_idx] for chunk_size in self.current_seg_size]])
 
 	def update(self, downloadig_time):
 		pre_time = self.time
@@ -142,23 +129,25 @@ class Live_Server(object):
 
 	# chunk size for next/current segment
 	def generate_chunk_size(self):
-		self.current_seg_size = []
+		self.current_seg_size = [[] for i in range(len(BITRATE))]
 		encoding_coef = 1.0
-		estimate_seg_size = encoding_coef * BITRATE[self.bitrate]
+		estimate_seg_size = [x * encoding_coef for x in BITRATE]
 
 		if self.chunk_in_seg == 2:
 		# Distribute size for chunks, currently, it should depend on chunk duration (200 or 500)
 			# seg_ratio = [np.random.uniform(EST_LOW_NOISE*ratio, EST_HIGH_NOISE*ratio) for x in range(len(BITRATE))]
-			temp_aux_chunk_size = estimate_seg_size/(1+self.ratio)
-			temp_ini_chunk_size = estimate_seg_size - temp_aux_chunk_size
-			self.current_seg_size.extend((temp_ini_chunk_size, temp_aux_chunk_size))
+			for i in range(len(estimate_seg_size)):
+				temp_aux_chunk_size = estimate_seg_size[i]/(1+self.ratio)
+				temp_ini_chunk_size = estimate_seg_size[i] - temp_aux_chunk_size
+				self.current_seg_size[i].extend((temp_ini_chunk_size, temp_aux_chunk_size))
 		# if 200ms, needs to be modified, not working
 		elif self.chunk_in_seg == 5:
-			temp_ini_chunk_size = estimate_seg_size * self.ratio / (1 + self.ratio)
-			temp_aux_chunk_size = (estimate_seg_size - temp_ini_chunk_size) / (self.chunk_in_seg - 1)
-			temp_chunks_size = [temp_ini_chunk_size]
-			temp_chunks_size.extend([temp_aux_chunk_size for _ in range(int(self.chunk_in_seg) - 1)])
-			self.current_seg_size.extend(temp_chunks_size)
+			for i in range(len(estimate_seg_size)):
+				temp_ini_chunk_size = estimate_seg_size[i] * self.ratio / (1 + self.ratio)
+				temp_aux_chunk_size = (estimate_seg_size[i] - temp_ini_chunk_size) / (self.chunk_in_seg - 1)
+				temp_chunks_size = [temp_ini_chunk_size]
+				temp_chunks_size.extend([temp_aux_chunk_size for _ in range(int(self.chunk_in_seg) - 1)])
+				self.current_seg_size[i].extend(temp_chunks_size)
 
 	def wait(self):
 		next_available_time = (int(self.time/self.chunk_duration) + 1) * self.chunk_duration
@@ -185,6 +174,8 @@ class Live_Server(object):
 
 def main():
 	server = Live_Server(seg_duration=SEG_DURATION, chunk_duration=CHUNK_DURATION, start_up_th=SERVER_START_UP_TH)
+	server.set_ratio(0.8)
+	server.init_encoding()
 	print(server.chunks, server.time)
 	print(server.next_delivery)
 

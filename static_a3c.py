@@ -90,8 +90,8 @@ class ActorNetwork(object):
 			# merge_net = tflearn.merge([split_0_flat, split_1_flat, split_2_flat, split_3_flat, split_4, split_5, split_6, split_7, split_8], 'concat')
 			
 			dense_net_0 = tflearn.fully_connected(merge_net, 128, activation='relu')
-			out = tflearn.fully_connected(dense_net_0, self.a_dim, activation='softmax', name='actor_output')
-
+			# out = tflearn.fully_connected(dense_net_0, self.a_dim, activation='softmax', name='actor_output')
+			out = tflearn.fully_connected(dense_net_0, self.a_dim, activation='softmax')
 			return inputs, out
 
 	def train(self, inputs, acts, act_grad_weights):
@@ -197,8 +197,8 @@ class CriticNetwork(object):
 			merge_net = tflearn.merge([split_0_flat, split_1_flat, split_2_flat, split_3_flat, split_4, split_5, split_6, split_7], 'concat')
 
 			dense_net_0 = tflearn.fully_connected(merge_net, 128, activation='relu')
-			out = tflearn.fully_connected(dense_net_0, 1, activation='linear', name='critic_output')
-
+			# out = tflearn.fully_connected(dense_net_0, 1, activation='linear', name='critic_output')
+			out = tflearn.fully_connected(dense_net_0, 1, activation='linear')
 			return inputs, out
 
 	def train(self, inputs, td_target):

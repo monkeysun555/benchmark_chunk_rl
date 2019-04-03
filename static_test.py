@@ -69,7 +69,7 @@ TRACE_NAME = '70ms_loss0.5_m5.txt'
 LOG_FILE_DIR = './test_results'
 LOG_FILE = LOG_FILE_DIR + '/rlchunk'
 
-END_EPOCH = 48000
+END_EPOCH =  60000
 TEST_TRACES = '../test_traces/'
 NN_MODEL = './models/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(END_EPOCH) + '.ckpt'
 # NN_MODEL = './models_new/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(END_EPOCH) + '.ckpt'
@@ -139,8 +139,8 @@ def main():
 		latency = 0.0
 		starting_time = server.get_time()
 		starting_time_idx = player.get_time_idx()
-
-		for _ in range(TEST_DURATION):
+		init = 1
+		for i in range(TEST_DURATION):
 			print "Current index: ", i
 			if init: 
 				if CHUNK_IN_SEG == 5:
@@ -170,7 +170,7 @@ def main():
 																		download_seg_idx, download_chunk_idx, take_action, chunk_number)
 				take_action = 0
 				buffer_length = player.get_buffer_length()
-				server_time = server.update(past_time)
+				server_time = server.update(download_duration)
 
 				if not time_out:
 					# server.chunks.pop(0)
@@ -283,6 +283,7 @@ def main():
 										str(action_reward) + '\n')
 						log_file.flush()
 						action_reward = 0.0
+					break
 
 		# need to modify
 		time_duration = server.get_time() - starting_time
