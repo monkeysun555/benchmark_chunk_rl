@@ -285,7 +285,7 @@ def main():
 	n_rate = ['rate']
 	n_starting_time  = ['starting_time']
 
-	log_path = RESULT_FILE + 'table_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + 's'
+	log_path = RESULT_FILE + 'table_rlchunk'
 	log_file = open(log_path, 'wb')
 
 	for i in range(len(file_records)):

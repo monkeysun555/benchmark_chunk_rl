@@ -4,7 +4,7 @@
 #SBATCH --cpus-per-task=4
 #SBATCH --time=2:30:00
 #SBATCH --mem=4GB
-#SBATCH --job-name=seg_rl
+#SBATCH --job-name=chunk_rl_js
 #SBATCH --mail-type=END
 #SBATCH --mail-user=ls3817@nyu.edu
 #SBATCH --output=slurm_%j.out
@@ -19,4 +19,4 @@ cd $VIRTUALENV
 source ./tflearn/bin/activate
   
 cd $RUNDIR
-python static_sim.py
+python static_sim_chunk.py
