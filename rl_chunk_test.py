@@ -6,7 +6,7 @@ os.environ['CUDA_VISIBLE_DEVICES']=''
 import tensorflow as tf
 import live_player_testing as live_player
 import live_server_testing as live_server
-import static_a3c as a3c
+import static_a3c_chunk as a3c
 import load
 
 S_INFO = 8
@@ -69,7 +69,7 @@ TRACE_NAME = '70ms_loss0.5_m5.txt'
 LOG_FILE_DIR = './test_results'
 LOG_FILE = LOG_FILE_DIR + '/rlchunk'
 
-END_EPOCH =  60000
+END_EPOCH =  63800
 TEST_TRACES = '../test_traces/'
 NN_MODEL = './models/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(END_EPOCH) + '.ckpt'
 # NN_MODEL = './models_new/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(END_EPOCH) + '.ckpt'

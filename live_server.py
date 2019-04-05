@@ -183,8 +183,22 @@ class Live_Server(object):
 		self.chunks = []	# 1 for initial chunk, 0 for following chunks
 		self.current_seg_size = [[] for i in range(len(BITRATE))]
 		self.encoding_update(0.0, self.time)
-		self.next_delivery = []
+		del self.next_delivery[:]
 		# self.delay_tol = start_up_th
+
+	def get_time(self):
+		return self.time
+
+	def get_next_delivery(self):
+		return self.next_delivery
+
+	def check_chunks_empty(self):
+		if len(self.chunks) == 0:
+			return True
+		else: return False
+
+	def clean_next_delivery(self):
+		del self.next_delivery[:]
 
 def main():
 	server = Live_Server(seg_duration=SEG_DURATION, chunk_duration=CHUNK_DURATION, start_up_th=SERVER_START_UP_TH)

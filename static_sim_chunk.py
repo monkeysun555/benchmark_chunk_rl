@@ -6,7 +6,7 @@ os.environ['CUDA_VISIBLE_DEVICES']=''
 import tensorflow as tf
 import live_player
 import live_server
-import static_a3c as a3c
+import static_a3c_chunk as a3c
 import load
 
 S_INFO = 8
@@ -80,7 +80,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 										randomSeed=agent_id)
 	server = live_server.Live_Server(seg_duration=SEG_DURATION, chunk_duration=CHUNK_DURATION, 
 										start_up_th=SERVER_START_UP_TH)
-	initial = 1
+	# initial = 1
 	# terminal = 0
 
 	with tf.Session() as sess, open(LOG_FILE + '_' + str(int(SERVER_START_UP_TH/MS_IN_S)) +'_agent_' + str(agent_id), 'wb') as log_file:
@@ -103,7 +103,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 		# last_bit_rate = DEFAULT_ACTION%len(BITRATE)
 		# bit_rate = DEFAULT_ACTION%len(BITRATE)
 		# playing_speed = NORMAL_PLAYING
-
+		video_terminate = 0
 		action_vec = np.zeros(A_DIM)
 		action_vec[action_num] = 1
 
@@ -116,6 +116,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 		take_action = 1
 		latency = 0.0
 		missing_count = 0
+
 		while True:
 			# get download chunk info
 			# Have to modify here, as we can get several chunks at the same time
@@ -127,7 +128,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			# download_chunk_size = download_chunk_info[2]
 			# download_chunk_idx = download_chunk_info[1]
 			# download_seg_idx = download_chunk_info[0]
-			download_chunk_info = server.next_delivery
+			download_chunk_info = server.get_next_delivery()
 			download_seg_idx = download_chunk_info[0]
 			download_chunk_idx = download_chunk_info[1]
 			download_chunk_end_idx = download_chunk_info[2]
@@ -140,29 +141,31 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 																		download_seg_idx, download_chunk_idx, take_action, chunk_number)
 			take_action = 0
 			past_time = download_duration
-			buffer_length = player.buffer
+			buffer_length = player.get_buffer()
 			# print(player.playing_time)
 			# print(past_time, len(server.chunks), server.next_delivery)
 			server_time = server.update(past_time)
 			if not time_out:
 				# server.chunks.pop(0)
-				server.next_delivery = []
+				server.clean_next_delivery()
 				sync = player.check_resync(server_time)
 			else:
-				assert player.state == 0
-				assert np.round(player.buffer, 3) == 0.0
+				assert player.get_state() == 0
+				assert np.round(player.get_buffer(), 3) == 0.0
 				# Pay attention here, how time out influence next reward, the smoothness
 				# Bit_rate will recalculated later, this is for reward calculation
 				bit_rate = 0
 				sync = 1
+
 			if sync:
+				video_terminate = 1
 				# To sync player, enter start up phase, buffer becomes zero
 				sync_time, missing_count = server.sync_encoding_buffer()
 				player.sync_playing(sync_time)
-				buffer_length = player.buffer
+				buffer_length = player.get_buffer()
 
-			latency = server.time - player.playing_time
-			player_state = player.state
+			latency = server.get_time() - player.get_display_time()
+			player_state = player.get_state()
 
 			log_bit_rate = np.log(BITRATE[bit_rate] / BITRATE[0])
 			log_last_bit_rate = np.log(BITRATE[last_bit_rate] / BITRATE[0])
@@ -178,12 +181,12 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			action_reward += reward
 
 			# chech whether need to wait, using number of available segs
-			if len(server.chunks) == 0:
+			if server.check_chunks_empty():
 				server_wait_time = server.wait()
 				assert server_wait_time > 0.0
 				assert server_wait_time < CHUNK_DURATION
 				player.wait(server_wait_time)
-				buffer_length = player.buffer
+				buffer_length = player.get_buffer()
 			server.generate_next_delivery()
 			# print(bit_rate, download_duration, server_wait_time, player.buffer, \
 			# 	server.time, player.playing_time, freezing, reward, action_reward)
@@ -209,7 +212,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			# Get next chunk/chunks information
 			# Should not directly get the next one, but might be several chunks togethers
 			# next_chunk_idx = server.chunks[0][1]
-			next_chunk_idx = server.next_delivery[1]
+			next_chunk_idx = server.get_next_delivery()[1]
 			if next_chunk_idx == 0 or sync:
 				# print(action_reward)
 				take_action = 1
@@ -254,22 +257,22 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 								str(reward) + '\n')
 				log_file.flush()
 
-			if len(r_batch) >= TRAIN_SEQ_LEN :
+			if len(r_batch) >= TRAIN_SEQ_LEN or video_terminate:
 				# print(r_batch)
 				if len(s_batch) >= 1:
-					if initial:
-						exp_queue.put([s_batch[1:],  # ignore the first chuck
-										a_batch[1:],  # since we don't have the
-										r_batch[1:],  # control over it
-										# terminal,
-										{'entropy': entropy_record}])
-						initial = 0
-					else:
-						exp_queue.put([s_batch[:],  # ignore the first chuck
-										a_batch[:],  # since we don't have the
-										r_batch[:],  # control over it
-										# terminal,
-										{'entropy': entropy_record}])
+					# if initial:
+					exp_queue.put([s_batch[1:],  # ignore the first chuck
+									a_batch[1:],  # since we don't have the
+									r_batch[1:],  # control over it
+									# terminal,
+									{'entropy': entropy_record}])
+						# initial = 0
+					# else:
+					# 	exp_queue.put([s_batch[:],  # ignore the first chuck
+					# 					a_batch[:],  # since we don't have the
+					# 					r_batch[:],  # control over it
+					# 					# terminal,
+					# 					{'entropy': entropy_record}])
 
 					actor_net_params, critic_net_params = net_params_queue.get()
 					actor.set_network_params(actor_net_params)
@@ -286,12 +289,26 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 					print("length of s batch is too short: ", len(s_batch))
 					
 			# This is infinit seq
-			if next_chunk_idx == 0 or sync:			
-				s_batch.append(state)
-				state = np.array(s_batch[-1], copy=True)
-				action_vec = np.zeros(A_DIM)
-				action_vec[action_num] = 1
-				a_batch.append(action_vec)
+			if next_chunk_idx == 0 or sync:
+				if video_terminate:
+					last_bit_rate = DEFAULT_ACTION
+					bit_rate = DEFAULT_ACTION
+					action_vec = np.zeros(A_DIM)
+					action_vec[bit_rate] = 1
+					s_batch.append(np.zeros((S_INFO, S_LEN)))
+					a_batch.append(action_vec)
+					video_terminate = 0
+
+					# Reset player and server
+					player.reset(USER_START_UP_TH)
+					server.reset(SERVER_START_UP_TH)
+
+				else:
+					s_batch.append(state)
+					state = np.array(s_batch[-1], copy=True)
+					action_vec = np.zeros(A_DIM)
+					action_vec[action_num] = 1
+					a_batch.append(action_vec)
 
 
 def central_agent(net_params_queues, exp_queues):

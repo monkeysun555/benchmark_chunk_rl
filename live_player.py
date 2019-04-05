@@ -340,3 +340,12 @@ class Live_Player(object):
 		self.state = 0	# 0: start up.  1: playing. 2: rebuffering
 		self.start_up_th = start_up_th
 
+	def get_display_time(self):
+		return self.playing_time
+
+	def get_state(self):
+		return self.state
+
+	def get_buffer(self):
+		return self.buffer
+

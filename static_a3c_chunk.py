@@ -90,8 +90,8 @@ class ActorNetwork(object):
 			# merge_net = tflearn.merge([split_0_flat, split_1_flat, split_2_flat, split_3_flat, split_4, split_5, split_6, split_7, split_8], 'concat')
 			
 			dense_net_0 = tflearn.fully_connected(merge_net, 128, activation='relu')
-			# out = tflearn.fully_connected(dense_net_0, self.a_dim, activation='softmax', name='actor_output')
-			out = tflearn.fully_connected(dense_net_0, self.a_dim, activation='softmax')
+			out = tflearn.fully_connected(dense_net_0, self.a_dim, activation='softmax', name='actor_output')
+			# out = tflearn.fully_connected(dense_net_0, self.a_dim, activation='softmax')
 			return inputs, out
 
 	def train(self, inputs, acts, act_grad_weights):
@@ -197,8 +197,8 @@ class CriticNetwork(object):
 			merge_net = tflearn.merge([split_0_flat, split_1_flat, split_2_flat, split_3_flat, split_4, split_5, split_6, split_7], 'concat')
 
 			dense_net_0 = tflearn.fully_connected(merge_net, 128, activation='relu')
-			# out = tflearn.fully_connected(dense_net_0, 1, activation='linear', name='critic_output')
-			out = tflearn.fully_connected(dense_net_0, 1, activation='linear')
+			out = tflearn.fully_connected(dense_net_0, 1, activation='linear', name='critic_output')
+			# out = tflearn.fully_connected(dense_net_0, 1, activation='linear')
 			return inputs, out
 
 	def train(self, inputs, td_target):
@@ -237,14 +237,16 @@ class CriticNetwork(object):
 			i: d for i, d in zip(self.input_network_params, input_network_params)
 		})
 
-
+# def compute_gradients(s_batch, a_batch, r_batch, terminal, actor, critic):
 def compute_gradients(s_batch, a_batch, r_batch, actor, critic):
 	"""
 	batch of s, a, r is from samples in a sequence
 	the format is in np.array([batch_size, s/a/r_dim])
 	terminal is True when sequence ends as a terminal state
 	"""
-
+	# print s_batch
+	# print r_batch
+	# print a_batch
 	assert s_batch.shape[0] == a_batch.shape[0]
 	# print(a_batch, r_batch)
 	assert s_batch.shape[0] == r_batch.shape[0]
@@ -254,14 +256,15 @@ def compute_gradients(s_batch, a_batch, r_batch, actor, critic):
 
 	R_batch = np.zeros(r_batch.shape)
 
-
-	R_batch[-1, 0] = v_batch[-1, 0]  # boot strap from last state
+	R_batch[-1, 0] = 0
+	# R_batch[-1, 0] = v_batch[-1, 0]  # boot strap from last state
 
 	for t in reversed(xrange(ba_size - 1)):
 		R_batch[t, 0] = r_batch[t] + GAMMA * R_batch[t + 1, 0]
 
 	td_batch = R_batch - v_batch
-
+	print R_batch
+	print v_batch
 	actor_gradients = actor.get_gradients(s_batch, a_batch, td_batch)
 	critic_gradients = critic.get_gradients(s_batch, R_batch)
 
