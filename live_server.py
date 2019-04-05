@@ -185,7 +185,8 @@ class Live_Server(object):
 		self.encoding_update(0.0, self.time)
 		del self.next_delivery[:]
 		# self.delay_tol = start_up_th
-
+		self.generate_next_delivery()
+		
 	def get_time(self):
 		return self.time
 

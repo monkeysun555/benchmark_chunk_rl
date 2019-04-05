@@ -263,8 +263,8 @@ def compute_gradients(s_batch, a_batch, r_batch, actor, critic):
 		R_batch[t, 0] = r_batch[t] + GAMMA * R_batch[t + 1, 0]
 
 	td_batch = R_batch - v_batch
-	print R_batch
-	print v_batch
+	# print R_batch
+	# print v_batch
 	actor_gradients = actor.get_gradients(s_batch, a_batch, td_batch)
 	critic_gradients = critic.get_gradients(s_batch, R_batch)
 

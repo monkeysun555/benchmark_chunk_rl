@@ -301,7 +301,8 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 
 					# Reset player and server
 					player.reset(USER_START_UP_TH)
-					server.reset(SERVER_START_UP_TH)
+					server.test_reset(SERVER_START_UP_TH)
+					
 
 				else:
 					s_batch.append(state)
