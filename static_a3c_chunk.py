@@ -66,16 +66,16 @@ class ActorNetwork(object):
 		with tf.variable_scope('actor'):
 			inputs = tflearn.input_data(shape=[None, self.s_dim[0], self.s_dim[1]])
 
-			split_0 = tflearn.conv_1d(inputs[:, 0:1, :], 32, 4, activation='relu')			# chunk size
-			split_1 = tflearn.conv_1d(inputs[:, 1:2, :], 32, 4, activation='relu')			# download duration
-			split_2 = tflearn.conv_1d(inputs[:, 2:3, :], 32, 4, activation='relu')			# buffer size
-			split_3 = tflearn.conv_1d(inputs[:, 3:4, :], 32, 4, activation='relu')			# number of chunks
-			split_4 = tflearn.fully_connected(inputs[:, 4:5, -1], 1, activation='relu')		# Last bitrate
+			split_0 = tflearn.conv_1d(inputs[:, 0:1, :], 64, 4, activation='relu')			# chunk size
+			split_1 = tflearn.conv_1d(inputs[:, 1:2, :], 64, 4, activation='relu')			# download duration
+			split_2 = tflearn.conv_1d(inputs[:, 2:3, :], 64, 4, activation='relu')			# buffer size
+			split_3 = tflearn.conv_1d(inputs[:, 3:4, :], 64, 4, activation='relu')			# number of chunks
+			split_4 = tflearn.fully_connected(inputs[:, 4:5, -1], 4, activation='relu')		# Last bitrate
 			# split_4 = tflearn.fully_connected(inputs[:, 4:5, -1], 8, activation='relu')	# accu latency
-			split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], 1, activation='relu')		# sync  0/1
+			split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], 4, activation='relu')		# sync  0/1
 			# split_6 = tflearn.fully_connected(inputs[:, 6:7, -1], 1, activation='relu')	# player state 0 or 1
-			split_6 = tflearn.fully_connected(inputs[:, 6:7, -4:], 4, activation='relu')	# server wait
-			split_7 = tflearn.fully_connected(inputs[:, 7:8, -4:], 4, activation='relu')	# freezing
+			split_6 = tflearn.fully_connected(inputs[:, 6:7, -4:], 8, activation='relu')	# server wait
+			split_7 = tflearn.fully_connected(inputs[:, 7:8, -4:], 8, activation='relu')	# freezing
 
 			# split_6 = tflearn.fully_connected(inputs[:, 6:7, -1], 128, activation='relu')	# freezing count
 			# split_7 = tflearn.fully_connected(inputs[:, 7:8, -1], 128, activation='relu')	# time out count
@@ -174,16 +174,16 @@ class CriticNetwork(object):
 		with tf.variable_scope('critic'):
 			inputs = tflearn.input_data(shape=[None, self.s_dim[0], self.s_dim[1]])
 
-			split_0 = tflearn.conv_1d(inputs[:, 0:1, :], 32, 4, activation='relu')			# chunk size
-			split_1 = tflearn.conv_1d(inputs[:, 1:2, :], 32, 4, activation='relu')			# download duration
-			split_2 = tflearn.conv_1d(inputs[:, 2:3, :], 32, 4, activation='relu')			# buffer size
-			split_3 = tflearn.conv_1d(inputs[:, 3:4, :], 32, 4, activation='relu')			# number of chunks
-			split_4 = tflearn.fully_connected(inputs[:, 4:5, -1], 1, activation='relu')		# Last bitrate
+			split_0 = tflearn.conv_1d(inputs[:, 0:1, :], 64, 4, activation='relu')			# chunk size
+			split_1 = tflearn.conv_1d(inputs[:, 1:2, :], 64, 4, activation='relu')			# download duration
+			split_2 = tflearn.conv_1d(inputs[:, 2:3, :], 64, 4, activation='relu')			# buffer size
+			split_3 = tflearn.conv_1d(inputs[:, 3:4, :], 64, 4, activation='relu')			# number of chunks
+			split_4 = tflearn.fully_connected(inputs[:, 4:5, -1], 4, activation='relu')		# Last bitrate
 			# split_4 = tflearn.fully_connected(inputs[:, 4:5, -1], 8, activation='relu')	# accu latency
-			split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], 1, activation='relu')		# sync  0/1
+			split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], 4, activation='relu')		# sync  0/1
 			# split_6 = tflearn.fully_connected(inputs[:, 6:7, -1], 1, activation='relu')	# player state 0 or 1
-			split_6 = tflearn.fully_connected(inputs[:, 6:7, -4:], 4, activation='relu')	# server wait
-			split_7 = tflearn.fully_connected(inputs[:, 7:8, -4:], 4, activation='relu')	# freezing
+			split_6 = tflearn.fully_connected(inputs[:, 6:7, -4:], 8, activation='relu')	# server wait
+			split_7 = tflearn.fully_connected(inputs[:, 7:8, -4:], 8, activation='relu')	# freezing
 
 			# split_6 = tflearn.fully_connected(inputs[:, 6:7, -1], 128, activation='relu')	# freezing count
 			# split_7 = tflearn.fully_connected(inputs[:, 7:8, -1], 128, activation='relu')	# time out count

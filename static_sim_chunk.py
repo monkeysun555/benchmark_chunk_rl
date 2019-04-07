@@ -63,8 +63,6 @@ DATA_DIR = '../bw_traces/'
 SUMMARY_DIR = './results'
 LOG_FILE = './results/log'
 # TEST_LOG_FOLDER = './test_results/'
-if not os.path.isdir(SUMMARY_DIR):
-	os.makedirs(SUMMARY_DIR)
 # TRAIN_TRACES = './traces/bandwidth/'
 
 
@@ -140,11 +138,10 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			real_chunk_size, download_duration, freezing, time_out, player_state = player.fetch(bit_rate, download_chunk_size, 
 																		download_seg_idx, download_chunk_idx, take_action, chunk_number)
 			take_action = 0
-			past_time = download_duration
 			buffer_length = player.get_buffer()
 			# print(player.playing_time)
-			# print(past_time, len(server.chunks), server.next_delivery)
-			server_time = server.update(past_time)
+			# print(download_duration, len(server.chunks), server.next_delivery)
+			server_time = server.update(download_duration)
 			if not time_out:
 				# server.chunks.pop(0)
 				server.clean_next_delivery()
@@ -180,6 +177,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			# print(reward)
 			action_reward += reward
 
+
 			# chech whether need to wait, using number of available segs
 			if server.check_chunks_empty():
 				server_wait_time = server.wait()
@@ -197,7 +195,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			state[1, -1] = download_duration / MS_IN_S		# downloading time
 			state[2, -1] = buffer_length / MS_IN_S			# buffer length
 			state[3, -1] = chunk_number						# number of chunk sent
-			state[4, -1] = BITRATE[bit_rate] / BITRATE[0]	# video bitrate
+			state[4, -1] = np.log(BITRATE[bit_rate] / BITRATE[0])	# video bitrate
 			# state[4, -1] = latency / MS_IN_S				# accu latency from start up
 			state[5, -1] = sync 							# whether there is resync
 			# state[6, -1] = player_state						# state of player
@@ -212,6 +210,8 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			# Get next chunk/chunks information
 			# Should not directly get the next one, but might be several chunks togethers
 			# next_chunk_idx = server.chunks[0][1]
+
+			print state
 			next_chunk_idx = server.get_next_delivery()[1]
 			if next_chunk_idx == 0 or sync:
 				# print(action_reward)
