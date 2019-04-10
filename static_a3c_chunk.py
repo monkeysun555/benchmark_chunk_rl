@@ -9,7 +9,7 @@ import tflearn
 
 GAMMA = 0.99
 A_DIM = 12
-ENTROPY_WEIGHT = 5
+ENTROPY_WEIGHT = 0.15
 ENTROPY_EPS = 1e-6
 # S_INFO = 4
 

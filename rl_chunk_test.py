@@ -14,6 +14,7 @@ S_LEN = 12
 A_DIM = 6
 ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
+END_EPOCH =  105000				# <========================= CHANGE MODELS, 105000 is the best right now
 
 
 TEST_DURATION = 100				# Number of testing <===================== Change length here
@@ -69,7 +70,6 @@ TRACE_NAME = '70ms_loss0.5_m5.txt'
 LOG_FILE_DIR = './test_results'
 LOG_FILE = LOG_FILE_DIR + '/rlchunk'
 
-END_EPOCH =  100000
 TEST_TRACES = '../test_traces/'
 NN_MODEL = './models/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(END_EPOCH) + '.ckpt'
 # NN_MODEL = './models_new/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(END_EPOCH) + '.ckpt'
@@ -226,12 +226,14 @@ def main():
 				state[0, -1] = real_chunk_size / KB_IN_MB 		# chunk size
 				state[1, -1] = download_duration / MS_IN_S		# downloading time
 				state[2, -1] = buffer_length / MS_IN_S			# buffer length
-				state[3, -1] = BITRATE[bit_rate] / BITRATE[0]	# video bitrate
+				state[3, -1] = chunk_number
+				state[4, -1] = log_bit_rate 					# video bitrate
 				# state[4, -1] = latency / MS_IN_S				# accu latency from start up
-				state[4, -1] = sync 							# whether there is resync
-				state[5, -1] = player_state						# state of player
+				state[5, -1] = sync 							# whether there is resync
+				# state[5, -1] = player_state						# state of player
 				state[6, -1] = server_wait_time / MS_IN_S		# time of waiting for server
 				state[7, -1] = freezing / MS_IN_S				# current freezing time
+				# print "Current index is: ", i, " and state is: ", state
 				# generate next set of seg size
 				# if add this, this will return to environment
 				# next_chunk_size_info = server.chunks[0][2]	# not useful
@@ -257,12 +259,12 @@ def main():
 						# If sync, might go to medium of segment, and there is no estimated chunk size
 						action_prob = actor.predict(np.reshape(state, (1, S_INFO, S_LEN)))
 						# # Using random
-						action_cumsum = np.cumsum(action_prob)
-						# print(action_prob)
-						action_num = (action_cumsum > np.random.randint(1, RAND_RANGE) / float(RAND_RANGE)).argmax()
+						print(action_prob)
+						# action_cumsum = np.cumsum(action_prob)
+						# action_num = (action_cumsum > np.random.randint(1, RAND_RANGE) / float(RAND_RANGE)).argmax()
 
 						# Use action with largest prob
-						# action_num = action_prob.argmax()
+						action_num = action_prob.argmax()
 						bit_rate = action_num
 
 						# if action_num >= len(BITRATE):

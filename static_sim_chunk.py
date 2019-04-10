@@ -12,8 +12,8 @@ import load
 S_INFO = 8
 S_LEN = 12
 A_DIM = 6	
-ACTOR_LR_RATE = 0.0001
-CRITIC_LR_RATE = 0.001
+ACTOR_LR_RATE = 0.00005
+CRITIC_LR_RATE = 0.0005
 NUM_AGENTS = 8
 
 TRAIN_SEQ_LEN = 200
@@ -41,11 +41,11 @@ TARGET_LATENCY = SERVER_START_UP_TH + 0.5 * SEG_DURATION
 USER_FREEZING_TOL = 3000.0							# Single time freezing time upper bound
 USER_LATENCY_TOL = TARGET_LATENCY + 3000.0			# Accumulate latency upperbound
 
-STARTING_EPOCH = 0
-NN_MODEL = None
-# STARTING_EPOCH = 70000
-# NN_MODEL = './results/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(STARTING_EPOCH) + '.ckpt'
-TERMINAL_EPOCH = 20000
+# STARTING_EPOCH = 0
+# NN_MODEL = None
+STARTING_EPOCH = 100000
+NN_MODEL = './results/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(STARTING_EPOCH) + '.ckpt'
+TERMINAL_EPOCH = 105000
 
 DEFAULT_ACTION = 0			# lowest bitrate
 ACTION_REWARD = 1.0 * CHUNK_SEG_RATIO	
@@ -195,7 +195,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			state[1, -1] = download_duration / MS_IN_S		# downloading time
 			state[2, -1] = buffer_length / MS_IN_S			# buffer length
 			state[3, -1] = chunk_number						# number of chunk sent
-			state[4, -1] = np.log(BITRATE[bit_rate] / BITRATE[0])	# video bitrate
+			state[4, -1] = log_bit_rate						# video bitrate
 			# state[4, -1] = latency / MS_IN_S				# accu latency from start up
 			state[5, -1] = sync 							# whether there is resync
 			# state[6, -1] = player_state						# state of player
@@ -211,7 +211,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			# Should not directly get the next one, but might be several chunks togethers
 			# next_chunk_idx = server.chunks[0][1]
 
-			print state
+			# print state
 			next_chunk_idx = server.get_next_delivery()[1]
 			if next_chunk_idx == 0 or sync:
 				# print(action_reward)
