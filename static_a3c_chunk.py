@@ -74,8 +74,8 @@ class ActorNetwork(object):
 			# split_4 = tflearn.fully_connected(inputs[:, 4:5, -1], 8, activation='relu')	# accu latency
 			split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], 1, activation='relu')		# sync  0/1
 			split_6 = tflearn.fully_connected(inputs[:, 6:7, -1], 1, activation='relu')		# player state 0 or 1
-			split_7 = tflearn.fully_connected(inputs[:, 7:8, -5:], 8, activation='relu')	# server wait
-			split_8 = tflearn.fully_connected(inputs[:, 8:9, -5:], 8, activation='relu')	# freezing
+			split_7 = tflearn.fully_connected(inputs[:, 7:8, -5:], 5, activation='relu')	# server wait
+			split_8 = tflearn.fully_connected(inputs[:, 8:9, -5:], 5, activation='relu')	# freezing
 
 			# split_6 = tflearn.fully_connected(inputs[:, 6:7, -1], 128, activation='relu')	# freezing count
 			# split_7 = tflearn.fully_connected(inputs[:, 7:8, -1], 128, activation='relu')	# time out count
@@ -182,8 +182,8 @@ class CriticNetwork(object):
 			# split_4 = tflearn.fully_connected(inputs[:, 4:5, -1], 8, activation='relu')	# accu latency
 			split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], 1, activation='relu')		# sync  0/1
 			split_6 = tflearn.fully_connected(inputs[:, 6:7, -1], 1, activation='relu')		# player state 0 or 1
-			split_7 = tflearn.fully_connected(inputs[:, 7:8, -5:], 8, activation='relu')	# server wait
-			split_8 = tflearn.fully_connected(inputs[:, 8:9, -5:], 8, activation='relu')	# freezing
+			split_7 = tflearn.fully_connected(inputs[:, 7:8, -5:], 5, activation='relu')	# server wait
+			split_8 = tflearn.fully_connected(inputs[:, 8:9, -5:], 5, activation='relu')	# freezing
 
 			# split_6 = tflearn.fully_connected(inputs[:, 6:7, -1], 128, activation='relu')	# freezing count
 			# split_7 = tflearn.fully_connected(inputs[:, 7:8, -1], 128, activation='relu')	# time out count
