@@ -1,3 +1,3 @@
 ['files', 'throughut', 'rate', 'reward', 'freezing', '#freezing', 'latency', 'switch', 'sync', 'starting_time']
-['rlchunk_70ms_loss0', 4.504, 3688.0, 2.229, 0.299, 2, 2.793, 11.0, 0.0, 2339.0]
+['rlchunk_70ms_loss0', 4.504, 3688.0, 2.229, 0.595, 3, 2.793, 11.0, 0.0, 2339.0]
 

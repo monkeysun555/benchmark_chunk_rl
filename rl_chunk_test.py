@@ -135,6 +135,8 @@ def main():
 		state = np.zeros((S_INFO, S_LEN))
 		r_batch = []
 		action_reward = 0.0		# Total reward is for all chunks within on segment
+		action_freezing = 0.0
+		action_wait = 0.0
 		take_action = 1
 		latency = 0.0
 		starting_time = server.get_time()
@@ -171,7 +173,7 @@ def main():
 				take_action = 0
 				buffer_length = player.get_buffer_length()
 				server_time = server.update(download_duration)
-
+				action_freezing += freezing
 				if not time_out:
 					# server.chunks.pop(0)
 					server.clean_next_delivery()
@@ -213,6 +215,7 @@ def main():
 				if server.check_chunks_empty():
 					# print "Enter wait"
 					server_wait_time = server.wait()
+					action_wait += server_wait_time
 					# print " Has to wait: ", server_wait_time
 					assert server_wait_time > 0.0
 					assert server_wait_time < CHUNK_DURATION
@@ -275,9 +278,9 @@ def main():
 						log_file.write(	str(server.time) + '\t' +
 									    str(BITRATE[last_bit_rate]) + '\t' +
 										str(buffer_length) + '\t' +
-										str(freezing) + '\t' +
+										str(action_freezing) + '\t' +
 										str(time_out) + '\t' +
-										str(server_wait_time) + '\t' +
+										str(action_wait) + '\t' +
 									    str(sync) + '\t' +
 									    str(latency) + '\t' +
 									    str(player.get_state()) + '\t' +
@@ -285,6 +288,7 @@ def main():
 										str(action_reward) + '\n')
 						log_file.flush()
 						action_reward = 0.0
+						action_freezing = 0.0
 					break
 
 		# need to modify

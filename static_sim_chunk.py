@@ -41,11 +41,11 @@ TARGET_LATENCY = SERVER_START_UP_TH + 0.5 * SEG_DURATION
 USER_FREEZING_TOL = 3000.0							# Single time freezing time upper bound
 USER_LATENCY_TOL = TARGET_LATENCY + 3000.0			# Accumulate latency upperbound
 
-# STARTING_EPOCH = 0
-# NN_MODEL = None
-STARTING_EPOCH = 100000
-NN_MODEL = './results/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(STARTING_EPOCH) + '.ckpt'
-TERMINAL_EPOCH = 105000
+STARTING_EPOCH = 0
+NN_MODEL = None
+# STARTING_EPOCH = 100000
+# NN_MODEL = './results/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(STARTING_EPOCH) + '.ckpt'
+TERMINAL_EPOCH = 20000
 
 DEFAULT_ACTION = 0			# lowest bitrate
 ACTION_REWARD = 1.0 * CHUNK_SEG_RATIO	
@@ -59,7 +59,8 @@ MISSING_PENALTY = 2.0			# not included
 # NORMAL_PLAYING = 1.0	# For 0
 # SLOW_PLAYING = 0.9		# For -1
 
-DATA_DIR = '../bw_traces/'
+# DATA_DIR = '../bw_traces/'
+DATA_DIR = '../new_traces/train_sim_traces/'
 SUMMARY_DIR = './results'
 LOG_FILE = './results/log'
 # TEST_LOG_FOLDER = './test_results/'
