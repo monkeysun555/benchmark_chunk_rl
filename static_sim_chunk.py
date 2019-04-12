@@ -156,7 +156,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 				sync = 1
 
 			if sync:
-				video_terminate = 1
+				# video_terminate = 1
 				# To sync player, enter start up phase, buffer becomes zero
 				sync_time, missing_count = server.sync_encoding_buffer()
 				player.sync_playing(sync_time)
@@ -261,7 +261,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			if len(r_batch) >= TRAIN_SEQ_LEN or video_terminate:
 				# print(r_batch)
 				video_terminate = 1
-				if len(s_batch) >= 1:
+				if len(s_batch) > 1:
 					# if initial:
 					exp_queue.put([s_batch[1:],  # ignore the first chuck
 									a_batch[1:],  # since we don't have the
@@ -289,6 +289,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 
 				else:
 					print("length of s batch is too short: ", len(s_batch))
+					assert 0 == 1
 					
 			# This is infinit seq
 			if next_chunk_idx == 0 or sync:
