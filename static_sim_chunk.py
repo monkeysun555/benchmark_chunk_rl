@@ -9,8 +9,8 @@ import live_server
 import static_a3c_chunk as a3c
 import load
 
-S_INFO = 8
-S_LEN = 12
+S_INFO = 9
+S_LEN = 15
 A_DIM = 6	
 ACTOR_LR_RATE = 0.00005
 CRITIC_LR_RATE = 0.0005
@@ -199,9 +199,9 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			state[4, -1] = log_bit_rate						# video bitrate
 			# state[4, -1] = latency / MS_IN_S				# accu latency from start up
 			state[5, -1] = sync 							# whether there is resync
-			# state[6, -1] = player_state						# state of player
-			state[6, -1] = server_wait_time / MS_IN_S		# time of waiting for server
-			state[7, -1] = freezing / MS_IN_S				# current freezing time
+			state[6, -1] = player_state						# state of player
+			state[7, -1] = server_wait_time / MS_IN_S		# time of waiting for server
+			state[8, -1] = freezing / MS_IN_S				# current freezing time
 			# generate next set of seg size
 			# if add this, this will return to environment
 			# next_chunk_size_info = server.chunks[0][2]	# not useful
