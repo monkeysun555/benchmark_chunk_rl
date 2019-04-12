@@ -459,7 +459,9 @@ def main():
 							 args=(net_params_queues, exp_queues))
 	coordinator.start()
 
-	all_cooked_time, all_cooked_bw, _ = load.loadBandwidth(DATA_DIR)
+	# all_cooked_time, all_cooked_bw, _ = load.loadBandwidth(DATA_DIR)		# For bw_traces
+	all_cooked_time, all_cooked_bw, _ = load.new_loadBandwidth(DATA_DIR)	# For new_traces
+
 	# all_cooked_vp, _ = load.loadViewport()
 	# print(all_cooked_vp)
 	# print(all_cooked_time)
