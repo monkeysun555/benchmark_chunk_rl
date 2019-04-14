@@ -76,13 +76,25 @@ class Live_Player(object):
 			if duration > rtt:
 				self.last_trace_time += rtt
 			else:
-				temp_rtt = rtt - duration
-				self.last_trace_time = self.time_trace[self.time_idx] * MS_IN_S	# in ms
-				self.time_idx += 1
-				if self.time_idx >= len(self.time_trace):
-					self.time_idx = 1
-					self.last_trace_time = 0.0
+
+				temp_rtt = rtt
+				while duration < temp_rtt:
+					self.last_trace_time = self.time_trace[self.time_idx] * MS_IN_S
+					self.time_idx += 1
+					if self.time_idx >= len(self.time_trace):
+						self.time_idx = 1
+						self.last_trace_time = 0.0
+					temp_rtt -= duration
+					duration = self.time_trace[self.time_idx] * MS_IN_S - self.last_trace_time
 				self.last_trace_time += temp_rtt
+
+				# temp_rtt = rtt - duration
+				# self.last_trace_time = self.time_trace[self.time_idx] * MS_IN_S	# in ms
+				# self.time_idx += 1
+				# if self.time_idx >= len(self.time_trace):
+				# 	self.time_idx = 1
+				# 	self.last_trace_time = 0.0
+				# self.last_trace_time += temp_rtt
 				assert self.last_trace_time < self.time_trace[self.time_idx] * MS_IN_S
 			downloading_fraction += rtt
 			assert self.state == 1 or self.state == 0
@@ -363,4 +375,6 @@ class Live_Player(object):
 	def get_throughput_trace(self):
 		return self.throughput_trace
 
+	def get_time_trace(self):
+		return self.time_trace
 

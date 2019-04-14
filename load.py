@@ -81,6 +81,26 @@ def load_single_trace(data_dir = TRACE_NAME):
 
 	return time_trace, throughput_trace
 
+def new_load_single_trace(data_dir = TRACE_NAME):
+
+	file_path = data_dir
+	time_trace = []
+	throughput_trace = []
+	# time = 0.0
+	# print(data)
+	with open(file_path, 'rb') as f:
+		for line in f:
+			# parse = line.split(',')
+			parse = line.strip('\n').split()
+			# print(parse)
+			time_trace.append(float(parse[0]))
+			# throughput_trace.append(float(parse[4]))
+			throughput_trace.append(float(parse[1]))
+			# time += 1.0
+	# print(throughput_trace)
+
+	return time_trace, throughput_trace
+
 if __name__ == '__main__':
 	testing_trace = '../new_traces/train_sim_traces/'
 	new_loadBandwidth(testing_trace)

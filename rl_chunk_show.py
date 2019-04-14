@@ -66,8 +66,10 @@ def plt_fig_full(trace, data_name, data_type):
 	plt.close()
 	return p
 
-def plt_fig_mix_bw_action(trace1, trace2, data_name, data_type1, data_type2):
+def plt_fig_mix_bw_action(trace1, trace2, new_time_trace, data_name, data_type1, data_type2):
 	# type1: tp,  type2: bitrate
+	init_time = new_time_trace[0]
+	new_time_trace = [time-init_time for time in new_time_trace]
 	y_axis_upper = 10000.0
 	# For negative reward
 	# y_axis_lower = np.floor(np.minimum(np.min(trace)*1.1,0.0))
@@ -80,7 +82,10 @@ def plt_fig_mix_bw_action(trace1, trace2, data_name, data_type1, data_type2):
 		curr_x += SEG_DURATION/MS_IN_S
 	p = plt.figure(figsize=(20,5))
 	plt.plot(x_value, trace2, color='chocolate', label=data_name + '_' + data_type2, linewidth=1.5,alpha=0.9)
-	plt.plot(range(1,len(trace1)+1), trace1*KB_IN_MB, color='blue', label=data_name + '_' + data_type1, linewidth=1.5,alpha=0.9)
+	# plt.plot(range(1,len(trace1)+1), trace1*KB_IN_MB, color='blue', label=data_name + '_' + data_type1, linewidth=1.5,alpha=0.9)
+	print len(new_time_trace)
+	print len(trace1)
+	plt.plot(new_time_trace, trace1*KB_IN_MB, color='blue', label=data_name + '_' + data_type1, linewidth=1.5,alpha=0.9)
 
 	plt.legend(loc='upper right',fontsize=30)
 	plt.grid(linestyle='dashed', axis='y',linewidth=1.5, color='gray')
@@ -201,11 +206,11 @@ def bar_wait(time_trace, wait_trace, data_name, data_type):
 		if not wait_trace[i] == 0:
 			bar_pos.append((time_trace[i] - wait_trace[i]/2.0)/ MS_IN_S)
 			height.append(wait_trace[i] /MS_IN_S)
-
+	if not len(height):
+		return 
 	# y_axis_upper = np.max(height) * 1.35
 	y_axis_upper = 1.0
 	p = plt.figure(figsize=(20,5))
-
 	plt.bar(bar_pos, height, color='chocolate', label=data_name + '_' + data_type)
 	plt.legend(loc='upper right',fontsize=30)
 	plt.grid(linestyle='dashed', axis='y',linewidth=1.5, color='gray')
@@ -315,8 +320,9 @@ def main():
 
 	for i in range(len(file_records)):
 		starting_time = float(file_records[i][-1][0])
-		tp_trace = np.array(file_records[i][-2]).astype(np.float)
-		records = file_records[i][1:-2]
+		tp_trace = np.array(file_records[i][-3]).astype(np.float)
+		new_time_trace = np.array(file_records[i][-2]).astype(np.float)
+		records = file_records[i][1:-3]
 		data_name = file_records[i][0]
 		n_starting_time.append(starting_time)
 
@@ -353,10 +359,11 @@ def main():
 
 		# Time
 		real_time_trace = [float(info[0]) for info in records]
+		# print real_time_trace
 		plt_time_trace = [r_time - starting_time for r_time in real_time_trace]
 
 		# For tp
-		print(len(tp_trace))
+		# print(len(tp_trace))
 		tp_fig = plt_fig(tp_trace, data_name, 'tp')
 		tp_figs.append([data_name, 'tp', tp_fig])
 		
@@ -390,7 +397,7 @@ def main():
 		# speed_fig = bar_speed(plt_time_trace, speed_trace, data_name, 'speed')
 		# speed_figs.append([data_name, 'speed', speed_fig])
 
-		server_mix_fig = plt_fig_mix_bw_action(tp_trace, bitrate_trace, data_name, 'tp', 'bitrate')
+		server_mix_fig = plt_fig_mix_bw_action(tp_trace, bitrate_trace, new_time_trace, data_name, 'tp', 'bitrate')
 		server_mix_figs.append([data_name, 'mix', server_mix_fig])
 
 

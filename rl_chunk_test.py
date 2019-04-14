@@ -9,12 +9,10 @@ import live_server_testing as live_server
 import static_a3c_chunk as a3c
 import load
 
-S_INFO = 8
-S_LEN = 12
+IF_NEW = 1
 A_DIM = 6
 ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
-END_EPOCH =  105000				# <========================= CHANGE MODELS, 105000 is the best right now
 
 
 TEST_DURATION = 100				# Number of testing <===================== Change length here
@@ -50,12 +48,11 @@ REBUF_PENALTY = 10.0		# for second
 SMOOTH_PENALTY = 1.0
 LONG_DELAY_PENALTY = 1.0 * CHUNK_SEG_RATIO 
 LONG_DELAY_PENALTY_BASE = 1.2	# for second
-MISSING_PENALTY = 2.0			# not included
+MISSING_PENALTY = 10.0	* CHUNK_SEG_RATIO		# not included
 # UNNORMAL_PLAYING_PENALTY = 1.0 * CHUNK_FRAG_RATIO
 # FAST_PLAYING = 1.1		# For 1
 # NORMAL_PLAYING = 1.0	# For 0
 # SLOW_PLAYING = 0.9		# For -1
-
 
 RATIO_LOW_2 = 2.0				# This is the lowest ratio between first chunk and the sum of all others
 RATIO_HIGH_2 = 10.0			# This is the highest ratio between first chunk and the sum of all others
@@ -64,29 +61,72 @@ RATIO_HIGH_5 = 1.0			# This is the highest ratio between first chunk and the sum
 
 TEST_TRACE_NUM = 1
 
-DATA_DIR = '../bw_traces/'
-TRACE_NAME = '70ms_loss0.5_m5.txt'
-
 LOG_FILE_DIR = './test_results'
 LOG_FILE = LOG_FILE_DIR + '/rlchunk'
 
-TEST_TRACES = '../test_traces/'
-NN_MODEL = './models/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(END_EPOCH) + '.ckpt'
+if not IF_NEW:
+	# For bw_traces
+	S_INFO = 8	# For bw_traces
+	S_LEN = 12	# For bw_Traces
+	END_EPOCH =  105000				# <========================= CHANGE MODELS, 105000 is the best right now, for no sync mode, bw_traces
+	DATA_DIR = '../bw_traces/'
+	TRACE_NAME = '70ms_loss0.5_m5.txt'	# For bw_traces
+	NN_MODEL = './models/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(END_EPOCH) + '.ckpt'
+else:
+	# For new_traces
+	S_INFO = 9	# For new_traces
+	S_LEN = 15	# For new_traces
+	END_EPOCH =  110000				# <========================= CHANGE MODELS, 105000 is the best right now, for sync mode, new_traces
+	# For sync mode
+	DATA_DIR = '../new_traces/test_sim_traces/'
+	TRACE_NAME = 'norway_car_10'
+	NN_MODEL = './new_models/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(END_EPOCH) + '.ckpt'
+
+# TEST_TRACES = '../test_traces/'
 # NN_MODEL = './models_new/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(END_EPOCH) + '.ckpt'
 # NN_MODEL = sys.argv[1]
 
 def ReLU(x):
 	return x * (x > 0)
 
-def record_tp(tp_trace, starting_time_idx, duration):
+def record_tp(tp_trace, time_trace, starting_time_idx, duration):
+	print starting_time_idx
+	print duration
 	tp_record = []
+	time_record = []
 	offset = 0
+	time_offset = 0.0
 	num_record = int(np.ceil(duration/SEG_DURATION))
 	for i in range(num_record):
 		if starting_time_idx + i + offset >= len(tp_trace):
 			offset = -len(tp_trace)
+			time_offset += time_trace[-1]
 		tp_record.append(tp_trace[starting_time_idx + i + offset])
-	return tp_record
+		time_record.append(time_trace[starting_time_idx + i + offset] + time_offset)
+	return tp_record, time_record
+
+def new_record_tp(tp_trace, time_trace, starting_time_idx, duration):
+	print starting_time_idx
+	print duration
+	start_time = time_trace[starting_time_idx]
+	tp_record = []
+	time_record = []
+	offset = 0
+	time_offset = 0.0
+	i = 0
+	time_range = 0.0
+	# num_record = int(np.ceil(duration/SEG_DURATION))
+	while  time_range < duration/MS_IN_S:
+		print time_trace[starting_time_idx + i + offset]
+		tp_record.append(tp_trace[starting_time_idx + i + offset])
+		time_record.append(time_trace[starting_time_idx + i + offset] + time_offset)
+		i += 1
+		if starting_time_idx + i + offset >= len(tp_trace):
+			offset -= len(tp_trace)
+			time_offset += time_trace[-1]
+		time_range = time_trace[starting_time_idx + i + offset] + time_offset - start_time
+
+	return tp_record, time_record
 
 def main():
 
@@ -96,7 +136,12 @@ def main():
 
 	assert len(BITRATE) == A_DIM
 
-	cooked_time, cooked_bw = load.load_single_trace(DATA_DIR + TRACE_NAME)
+	if not IF_NEW:
+		cooked_time, cooked_bw = load.load_single_trace(DATA_DIR + TRACE_NAME)		# For bw_traces
+	else:
+		cooked_time, cooked_bw = load.new_load_single_trace(DATA_DIR + TRACE_NAME)	# For new_traces
+
+
 
 	player = live_player.Live_Player(time_trace=cooked_time, throughput_trace=cooked_bw, 
 										seg_duration=SEG_DURATION, chunk_duration=CHUNK_DURATION,
@@ -144,6 +189,7 @@ def main():
 		init = 1
 		for i in range(TEST_DURATION):
 			print "Current index: ", i
+			print server.get_time()
 			if init: 
 				if CHUNK_IN_SEG == 5:
 					ratio = np.random.uniform(RATIO_LOW_5, RATIO_HIGH_5)
@@ -184,15 +230,18 @@ def main():
 					# Pay attention here, how time out influence next reward, the smoothness
 					# Bit_rate will recalculated later, this is for reward calculation
 					bit_rate = 0
-					sync = 1
+					if IF_NEW:
+						sync = 1
 				# Disable sync for current situation
 				if sync:
-					print "Should not happen"
-					assert 0 == 1
-					# To sync player, enter start up phase, buffer becomes zero
-					sync_time, missing_count = server.sync_encoding_buffer()
-					player.sync_playing(sync_time)
-					buffer_length = player.get_buffer_length()
+					if not IF_NEW:
+						print "Should not happen"
+						assert 0 == 1
+					else:
+						# To sync player, enter start up phase, buffer becomes zero
+						sync_time, missing_count = server.sync_encoding_buffer()
+						player.sync_playing(sync_time)
+						buffer_length = player.get_buffer_length()
 
 				latency = server.get_time() - player.get_playing_time()
 				# print "latency is: ", latency/MS_IN_S
@@ -202,12 +251,20 @@ def main():
 				log_last_bit_rate = np.log(BITRATE[last_bit_rate] / BITRATE[0])
 				last_bit_rate = bit_rate
 				# print(log_bit_rate, log_last_bit_rate)
-				reward = ACTION_REWARD * log_bit_rate * chunk_number \
-						- REBUF_PENALTY * freezing / MS_IN_S \
-						- SMOOTH_PENALTY * np.abs(log_bit_rate - log_last_bit_rate) \
-						- LONG_DELAY_PENALTY*(LONG_DELAY_PENALTY_BASE**(ReLU(latency-TARGET_LATENCY)/ MS_IN_S)-1) * chunk_number\
+				if not IF_NEW:
+					reward = ACTION_REWARD * log_bit_rate * chunk_number \
+							- REBUF_PENALTY * freezing / MS_IN_S \
+							- SMOOTH_PENALTY * np.abs(log_bit_rate - log_last_bit_rate) \
+							- LONG_DELAY_PENALTY*(LONG_DELAY_PENALTY_BASE**(ReLU(latency-TARGET_LATENCY)/ MS_IN_S)-1) * chunk_number\
 						# - UNNORMAL_PLAYING_PENALTY*(playing_speed-NORMAL_PLAYING)*download_duration/MS_IN_S
 						# - MISSING_PENALTY * missing_count
+				else:
+					reward = ACTION_REWARD * log_bit_rate * chunk_number \
+							- REBUF_PENALTY * freezing / MS_IN_S \
+							- SMOOTH_PENALTY * np.abs(log_bit_rate - log_last_bit_rate) \
+							- LONG_DELAY_PENALTY*(LONG_DELAY_PENALTY_BASE**(ReLU(latency-TARGET_LATENCY)/ MS_IN_S)-1) * chunk_number \
+							- MISSING_PENALTY * missing_count
+							# - UNNORMAL_PLAYING_PENALTY*(playing_speed-NORMAL_PLAYING)*download_duration/MS_IN_S
 				# print(reward)
 				action_reward += reward
 
@@ -224,18 +281,33 @@ def main():
 					# print "After wait, player: ", player.get_playing_time(), player.get_real_time()
 					buffer_length = player.get_buffer_length()
 
-				# Establish state for next iteration
 				state = np.roll(state, -1, axis=1)
-				state[0, -1] = real_chunk_size / KB_IN_MB 		# chunk size
-				state[1, -1] = download_duration / MS_IN_S		# downloading time
-				state[2, -1] = buffer_length / MS_IN_S			# buffer length
-				state[3, -1] = chunk_number
-				state[4, -1] = log_bit_rate 					# video bitrate
-				# state[4, -1] = latency / MS_IN_S				# accu latency from start up
-				state[5, -1] = sync 							# whether there is resync
-				# state[5, -1] = player_state						# state of player
-				state[6, -1] = server_wait_time / MS_IN_S		# time of waiting for server
-				state[7, -1] = freezing / MS_IN_S				# current freezing time
+				# Establish state for next iteration
+				if not IF_NEW:
+					# FOR BW_TRACES
+					state[0, -1] = real_chunk_size / KB_IN_MB 		# chunk size
+					state[1, -1] = download_duration / MS_IN_S		# downloading time
+					state[2, -1] = buffer_length / MS_IN_S			# buffer length
+					state[3, -1] = chunk_number
+					state[4, -1] = log_bit_rate 					# video bitrate
+					# state[4, -1] = latency / MS_IN_S				# accu latency from start up
+					state[5, -1] = sync 							# whether there is resync
+					# state[5, -1] = player_state						# state of player
+					state[6, -1] = server_wait_time / MS_IN_S		# time of waiting for server
+					state[7, -1] = freezing / MS_IN_S				# current freezing time
+
+				else:
+					# FOR NEW_TRACES
+					state[0, -1] = real_chunk_size / KB_IN_MB 		# chunk size
+					state[1, -1] = download_duration / MS_IN_S		# downloading time
+					state[2, -1] = buffer_length / MS_IN_S			# buffer length
+					state[3, -1] = chunk_number
+					state[4, -1] = log_bit_rate 					# video bitrate
+					# state[4, -1] = latency / MS_IN_S				# accu latency from start up
+					state[5, -1] = sync 							# whether there is resync
+					state[6, -1] = player_state						# state of player
+					state[7, -1] = server_wait_time / MS_IN_S		# time of waiting for server
+					state[8, -1] = freezing / MS_IN_S				# current freezing time
 				# print "Current index is: ", i, " and state is: ", state
 				# generate next set of seg size
 				# if add this, this will return to environment
@@ -251,7 +323,7 @@ def main():
 				next_chunk_idx = server.get_next_delivery()[1]
 
 				if next_chunk_idx == 0 or sync:
-					if sync:
+					if sync and not IF_NEW:
 						# Process sync
 						print "Should not happen!"
 						assert 0 == 1
@@ -289,13 +361,21 @@ def main():
 						log_file.flush()
 						action_reward = 0.0
 						action_freezing = 0.0
+						action_wait = 0.0
 					break
 
 		# need to modify
 		time_duration = server.get_time() - starting_time
-		tp_record = record_tp(player.get_throughput_trace(), starting_time_idx, time_duration) 
+		if not IF_NEW:
+			tp_record, time_record = record_tp(player.get_throughput_trace(), player.get_time_trace(), starting_time_idx, time_duration + buffer_length) 
+		else:
+			tp_record, time_record = new_record_tp(player.get_throughput_trace(), player.get_time_trace(), starting_time_idx, time_duration + buffer_length) 
 		print(starting_time_idx, TRACE_NAME, len(player.get_throughput_trace()), player.get_time_idx(), len(tp_record), np.sum(r_batch))
 		log_file.write('\t'.join(str(tp) for tp in tp_record))
+		log_file.write('\n')
+
+		log_file.write('\t'.join(str(time) for time in time_record))
+		# log_file.write('\n' + str(IF_NEW))
 		log_file.write('\n' + str(starting_time))
 		log_file.write('\n')
 		log_file.close()		
