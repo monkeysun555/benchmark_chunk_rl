@@ -10,6 +10,7 @@ import static_a3c_chunk as a3c
 import load
 
 IF_NEW = 1
+DEBUGGING = 0
 if not IF_NEW:
 	S_INFO = 8
 	S_LEN = 12
@@ -19,9 +20,9 @@ else:
 A_DIM = 6	
 ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
-NUM_AGENTS = 8
+NUM_AGENTS = 1
 
-TRAIN_SEQ_LEN = 200
+TRAIN_SEQ_LEN = 100
 MODEL_SAVE_INTERVAL = 100
 
 # New bitrate setting, 6 actions, correspongding to 240p, 360p, 480p, 720p, 1080p and 1440p(2k)
@@ -46,11 +47,11 @@ TARGET_LATENCY = SERVER_START_UP_TH + 0.5 * SEG_DURATION
 USER_FREEZING_TOL = 3000.0									# Single time freezing time upper bound
 USER_LATENCY_TOL = TARGET_LATENCY + USER_FREEZING_TOL		# Accumulate latency upperbound
 
-# STARTING_EPOCH = 0
-# NN_MODEL = None
-STARTING_EPOCH = 20000
-NN_MODEL = './results/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(STARTING_EPOCH) + '.ckpt'
-TERMINAL_EPOCH = 30000
+STARTING_EPOCH = 0
+NN_MODEL = None
+# STARTING_EPOCH = 20000
+# NN_MODEL = './results/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(STARTING_EPOCH) + '.ckpt'
+TERMINAL_EPOCH = 10000
 
 DEFAULT_ACTION = 0			# lowest bitrate
 ACTION_REWARD = 1.0 * CHUNK_SEG_RATIO	
@@ -137,19 +138,27 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			download_chunk_end_idx = download_chunk_info[2]
 			download_chunk_size = download_chunk_info[3]
 			chunk_number = download_chunk_end_idx - download_chunk_idx + 1
+			if DEBUGGING:
+				print("Segment id:", download_seg_idx)
+				print("Chunk number:", chunk_number)
+				print("Bitrate is:", bit_rate)
 			server_wait_time = 0.0
 			sync = 0
 			missing_count = 0
 			real_chunk_size, download_duration, freezing, time_out, player_state = player.fetch(bit_rate, download_chunk_size, 
 																		download_seg_idx, download_chunk_idx, take_action, chunk_number)
+			if DEBUGGING:
+				print("After downloading, chunk size:", real_chunk_size)
+				print("Duration:", download_duration)
+				print("Freezing:", freezing)
+				print("Is it timeout?", time_out)
+				print("Player playing time:", player.get_display_time())
+				print("Server time:", server.get_time())
 			take_action = 0
 			buffer_length = player.get_buffer()
-			# print(player.playing_time)
 			# print(download_duration, len(server.chunks), server.next_delivery)
 			server_time = server.update(download_duration)
-			if IF_NEW:
-				if download_seg_idx >= TRAIN_SEQ_LEN:
-					video_terminate = 1
+
 			if not time_out:
 				# server.chunks.pop(0)
 				server.clean_next_delivery()
@@ -165,6 +174,8 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			if sync:
 				if not IF_NEW:
 					video_terminate = 1
+				if DEBUGGING:
+					print("Sync happens, latnecy will change")
 				# To sync player, enter start up phase, buffer becomes zero
 				sync_time, missing_count = server.sync_encoding_buffer()
 				player.sync_playing(sync_time)
@@ -180,19 +191,25 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			reward = ACTION_REWARD * log_bit_rate * chunk_number \
 					- REBUF_PENALTY * freezing / MS_IN_S \
 					- SMOOTH_PENALTY * np.abs(log_bit_rate - log_last_bit_rate) \
-					- LONG_DELAY_PENALTY*(LONG_DELAY_PENALTY_BASE**(ReLU(latency-TARGET_LATENCY)/ MS_IN_S)-1) * chunk_number
+					- LONG_DELAY_PENALTY*(LONG_DELAY_PENALTY_BASE**(ReLU(latency-TARGET_LATENCY)/ MS_IN_S)-1) * chunk_number \
 					- MISSING_PENALTY * missing_count
 					# - UNNORMAL_PLAYING_PENALTY*(playing_speed-NORMAL_PLAYING)*download_duration/MS_IN_S
-			# print(reward)
+			if DEBUGGING:
+				print("reward is made up of:", ACTION_REWARD * log_bit_rate * chunk_number, - REBUF_PENALTY * freezing / MS_IN_S, - SMOOTH_PENALTY * np.abs(log_bit_rate - log_last_bit_rate),\
+									 - LONG_DELAY_PENALTY*((LONG_DELAY_PENALTY_BASE**(ReLU(latency-TARGET_LATENCY)/ MS_IN_S))-1) * chunk_number, - MISSING_PENALTY * missing_count)
 			action_reward += reward
 			# chech whether need to wait, using number of available segs
 			if server.check_chunks_empty():
 				server_wait_time = server.wait()
 				assert server_wait_time > 0.0
 				assert server_wait_time < CHUNK_DURATION
+				# print("Before wait, player time:", player.get_display_time())
 				player.wait(server_wait_time)
+				# print("After wait, player time:", player.get_display_time())
 				buffer_length = player.get_buffer()
 			server.generate_next_delivery()
+			# print("After waiting, latency is:", server.get_time() - player.get_display_time())
+			# print("<===============================>")
 			# print(bit_rate, download_duration, server_wait_time, player.buffer, \
 			# 	server.time, player.playing_time, freezing, reward, action_reward)
 

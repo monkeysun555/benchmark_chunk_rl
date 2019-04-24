@@ -318,7 +318,6 @@ class Live_Player(object):
 		return sync
 
 	def reset(self, start_up_th):
-		self.playing_time = 0.0
 		self.trace_idx = np.random.randint(len(self.throughput_traces))
 		self.throughput_trace = self.throughput_traces[self.trace_idx]
 		self.time_trace = self.time_traces[self.trace_idx]
@@ -331,6 +330,7 @@ class Live_Player(object):
 
 		self.buffer = 0.0	# ms
 		self.state = 0	# 0: start up.  1: traceing. 2: rebuffering
+		self.playing_time = 0.0
 		self.start_up_th = start_up_th
 
 	def test_reset(self, start_up_th, random_seed):
