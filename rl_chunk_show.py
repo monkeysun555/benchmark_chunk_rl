@@ -7,7 +7,6 @@ MS_IN_S = 1000.0
 RESULT_DIR = './test_results/'
 FIGURES_DIR = './test_figures/'
 RESULT_FILE = './test_figures/'
-
        
 PLT_BUFFER_A = 1e-5		#ms
 MS_IN_S = 1000.0
@@ -270,9 +269,7 @@ def bar_missing(time_trace, sync_trace, missing_trace, data_name, data_type):
 	else:
 		return None
 
-
 def main():
-
 	if not os.path.isdir(FIGURES_DIR):
 		os.makedirs(FIGURES_DIR)
 	if not os.path.isdir(RESULT_FILE):
@@ -359,7 +356,6 @@ def main():
 
 		# Time
 		real_time_trace = [float(info[0]) for info in records]
-		# print real_time_trace
 		plt_time_trace = [r_time - starting_time for r_time in real_time_trace]
 
 		# For tp
@@ -428,9 +424,7 @@ def main():
 
 		for p in server_mix_figs:
 			p[2].savefig(FIGURES_DIR + p[0] + '_' + p[1] + '.eps', format='eps', dpi=1000, figsize=(30, 10))
-		
-
-
+	
 		for i in range(len(n_files)):
 			current_log = []
 			current_log.append(n_files[i])

@@ -19,7 +19,7 @@ else:
 A_DIM = 6	
 ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
-NUM_AGENTS = 1
+NUM_AGENTS = 8
 
 TRAIN_SEQ_LEN = 200
 MODEL_SAVE_INTERVAL = 100
@@ -43,22 +43,22 @@ SERVER_START_UP_TH = 2000.0				# <========= TO BE MODIFIED. TEST WITH DIFFERENT 
 USER_START_UP_TH = 2000.0
 # set a target latency, then use fast playing to compensate
 TARGET_LATENCY = SERVER_START_UP_TH + 0.5 * SEG_DURATION
-USER_FREEZING_TOL = 3000.0							# Single time freezing time upper bound
-USER_LATENCY_TOL = TARGET_LATENCY + 3000.0			# Accumulate latency upperbound
+USER_FREEZING_TOL = 3000.0									# Single time freezing time upper bound
+USER_LATENCY_TOL = TARGET_LATENCY + USER_FREEZING_TOL		# Accumulate latency upperbound
 
-STARTING_EPOCH = 0
-NN_MODEL = None
-# STARTING_EPOCH = 100000
-# NN_MODEL = './results/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(STARTING_EPOCH) + '.ckpt'
-TERMINAL_EPOCH = 20000
+# STARTING_EPOCH = 0
+# NN_MODEL = None
+STARTING_EPOCH = 20000
+NN_MODEL = './results/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(STARTING_EPOCH) + '.ckpt'
+TERMINAL_EPOCH = 30000
 
 DEFAULT_ACTION = 0			# lowest bitrate
 ACTION_REWARD = 1.0 * CHUNK_SEG_RATIO	
-REBUF_PENALTY = 10.0		# for second
+REBUF_PENALTY = 3.0		# for second
 SMOOTH_PENALTY = 1.0
-LONG_DELAY_PENALTY = 1.0 * CHUNK_SEG_RATIO 
+LONG_DELAY_PENALTY = 5.0 * CHUNK_SEG_RATIO 
 LONG_DELAY_PENALTY_BASE = 1.2	# for second
-MISSING_PENALTY = 10.0 * CHUNK_SEG_RATIO	# not included
+MISSING_PENALTY = 3.0 * CHUNK_SEG_RATIO	# not included
 # UNNORMAL_PLAYING_PENALTY = 1.0 * CHUNK_FRAG_RATIO
 # FAST_PLAYING = 1.1		# For 1
 # NORMAL_PLAYING = 1.0	# For 0
@@ -86,8 +86,6 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 										randomSeed=agent_id)
 	server = live_server.Live_Server(seg_duration=SEG_DURATION, chunk_duration=CHUNK_DURATION, 
 										start_up_th=SERVER_START_UP_TH)
-	# initial = 1
-	# terminal = 0
 
 	with tf.Session() as sess, open(LOG_FILE + '_' + str(int(SERVER_START_UP_TH/MS_IN_S)) +'_agent_' + str(agent_id), 'wb') as log_file:
 		actor = a3c.ActorNetwork(sess,
@@ -149,6 +147,9 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			# print(player.playing_time)
 			# print(download_duration, len(server.chunks), server.next_delivery)
 			server_time = server.update(download_duration)
+			if IF_NEW:
+				if download_seg_idx >= TRAIN_SEQ_LEN:
+					video_terminate = 1
 			if not time_out:
 				# server.chunks.pop(0)
 				server.clean_next_delivery()
@@ -179,7 +180,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			reward = ACTION_REWARD * log_bit_rate * chunk_number \
 					- REBUF_PENALTY * freezing / MS_IN_S \
 					- SMOOTH_PENALTY * np.abs(log_bit_rate - log_last_bit_rate) \
-					- LONG_DELAY_PENALTY*(LONG_DELAY_PENALTY_BASE**(ReLU(latency-TARGET_LATENCY)/ MS_IN_S)-1) * chunk_number \
+					- LONG_DELAY_PENALTY*(LONG_DELAY_PENALTY_BASE**(ReLU(latency-TARGET_LATENCY)/ MS_IN_S)-1) * chunk_number
 					- MISSING_PENALTY * missing_count
 					# - UNNORMAL_PLAYING_PENALTY*(playing_speed-NORMAL_PLAYING)*download_duration/MS_IN_S
 			# print(reward)
@@ -219,7 +220,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 				# state[6, -1] = player_state					# state of player
 				state[6, -1] = server_wait_time / MS_IN_S		# time of waiting for server
 				state[7, -1] = freezing / MS_IN_S				# current freezing time
-			print state
+			# print state
 			# generate next set of seg size
 			# if add this, this will return to environment
 			# next_chunk_size_info = server.chunks[0][2]	# not useful

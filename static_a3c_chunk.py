@@ -13,10 +13,9 @@ else:
 	A_DIM = 15
 
 GAMMA = 0.99
-ENTROPY_WEIGHT = 5
+ENTROPY_WEIGHT = 1
 ENTROPY_EPS = 1e-6
 # S_INFO = 4
-
 
 class ActorNetwork(object):
 	"""
@@ -75,15 +74,10 @@ class ActorNetwork(object):
 				split_2 = tflearn.conv_1d(inputs[:, 2:3, :], 64, 5, activation='relu')			# buffer size
 				split_3 = tflearn.conv_1d(inputs[:, 3:4, :], 64, 5, activation='relu')			# number of chunks
 				split_4 = tflearn.fully_connected(inputs[:, 4:5, -1], 4, activation='relu')		# Last bitrate
-				# split_4 = tflearn.fully_connected(inputs[:, 4:5, -1], 8, activation='relu')	# accu latency
 				split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], 4, activation='relu')		# sync  0/1
 				split_6 = tflearn.fully_connected(inputs[:, 6:7, -1], 4, activation='relu')		# player state 0 or 1
 				split_7 = tflearn.fully_connected(inputs[:, 7:8, -5:], 8, activation='relu')	# server wait
 				split_8 = tflearn.fully_connected(inputs[:, 8:9, -5:], 8, activation='relu')	# freezing
-
-				# split_6 = tflearn.fully_connected(inputs[:, 6:7, -1], 128, activation='relu')	# freezing count
-				# split_7 = tflearn.fully_connected(inputs[:, 7:8, -1], 128, activation='relu')	# time out count
-				# split_8 = tflearn.fully_connected(inputs[:, 8:9, :A_DIM], 4, activation='relu')	# next availabel seg size 
 
 				split_0_flat = tflearn.flatten(split_0)
 				split_1_flat = tflearn.flatten(split_1)
