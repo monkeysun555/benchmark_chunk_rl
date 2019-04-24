@@ -77,7 +77,7 @@ else:
 	END_EPOCH =  90000				# <========================= CHANGE MODELS, 105000 is the best right now, for sync mode, new_traces
 	# For sync mode
 	DATA_DIR = '../new_traces/test_sim_traces/'
-	TRACE_NAME = 'norway_car_1'
+	TRACE_NAME = 'norway_car_10'
 	NN_MODEL = './new_models/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(END_EPOCH) + '.ckpt'
 
 # TEST_TRACES = '../test_traces/'

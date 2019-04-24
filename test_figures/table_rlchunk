@@ -1,4 +1,3 @@
 ['files', 'throughut', 'rate', 'reward', 'freezing', '#freezing', 'latency', 'switch', 'sync', 'starting_time']
-['rlchunk_norway_car_1', 2.699, 875.0, 0.551, 1.247, 6, 2.792, 5.0, 0.0, 2339.0]
-['rlchunk_70ms_loss0', 4.486, 3688.0, 2.229, 0.595, 3, 2.793, 11.0, 0.0, 2339.0]
+['RLChunk_norway_car_10', 1.881, 877.0, 0.747, 0.341, 2, 2.678, 16.0, 0.0, 2339.0]
 

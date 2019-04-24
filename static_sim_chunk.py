@@ -15,12 +15,12 @@ if not IF_NEW:
 	S_INFO = 8
 	S_LEN = 12
 else:
-	S_INFO = 9
+	S_INFO = 8
 	S_LEN = 15
 A_DIM = 6	
 ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
-NUM_AGENTS = 1
+NUM_AGENTS = 8
 
 TRAIN_SEQ_LEN = 100
 MODEL_SAVE_INTERVAL = 100
@@ -51,7 +51,7 @@ STARTING_EPOCH = 0
 NN_MODEL = None
 # STARTING_EPOCH = 20000
 # NN_MODEL = './results/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(STARTING_EPOCH) + '.ckpt'
-TERMINAL_EPOCH = 10000
+TERMINAL_EPOCH = 15000
 
 DEFAULT_ACTION = 0			# lowest bitrate
 ACTION_REWARD = 1.0 * CHUNK_SEG_RATIO	
@@ -64,7 +64,14 @@ MISSING_PENALTY = 3.0 * CHUNK_SEG_RATIO	# not included
 # FAST_PLAYING = 1.1		# For 1
 # NORMAL_PLAYING = 1.0	# For 0
 # SLOW_PLAYING = 0.9		# For -1
+RTT_LOW = 30.0
 
+NOR_BW = 10.0
+NOR_BUFFER = USER_LATENCY_TOL / MS_IN_S
+NOR_CHUNK = CHUNK_IN_SEG
+NOR_FREEZING = USER_FREEZING_TOL / MS_IN_S
+NOR_RATE = np.log(BITRATE[-1]/BITRATE[0])
+NOR_WAIT = CHUNK_DURATION / MS_IN_S
 if not IF_NEW:
 	DATA_DIR = '../bw_traces/'
 else:
@@ -216,16 +223,21 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			# Establish state for next iteration
 			state = np.roll(state, -1, axis=1)
 			if IF_NEW:
-				state[0, -1] = real_chunk_size / KB_IN_MB 		# chunk size
-				state[1, -1] = download_duration / MS_IN_S		# downloading time
-				state[2, -1] = buffer_length / MS_IN_S			# buffer length
-				state[3, -1] = chunk_number						# number of chunk sent
-				state[4, -1] = log_bit_rate						# video bitrate
+				temp_download_duration = download_duration
+				if download_chunk_idx == 0:
+					temp_download_duration -= RTT_LOW	# RTT low
+
+				state[0, -1] = real_chunk_size / temp_download_duration / NOR_BW		# chunk size
+				# state[1, -1] = download_duration / MS_IN_S		# downloading time
+				state[1, -1] = buffer_length / MS_IN_S / NOR_BUFFER			# buffer length
+				state[2, -1] = chunk_number / NOR_CHUNK						# number of chunk sent
+				state[3, -1] = log_bit_rate	/ NOR_RATE					# video bitrate
 				# state[4, -1] = latency / MS_IN_S				# accu latency from start up
-				state[5, -1] = sync 							# whether there is resync
-				state[6, -1] = player_state						# state of player
-				state[7, -1] = server_wait_time / MS_IN_S		# time of waiting for server
-				state[8, -1] = freezing / MS_IN_S				# current freezing time
+				state[4, -1] = sync 							# whether there is resync
+				state[5, -1] = player_state						# state of player
+				state[6, -1] = server_wait_time / MS_IN_S/ NOR_WAIT	# time of waiting for server
+				state[7, -1] = freezing / MS_IN_S / NOR_FREEZING				# current freezing time
+				print(state)
 			else:
 				state[0, -1] = real_chunk_size / KB_IN_MB 		# chunk size
 				state[1, -1] = download_duration / MS_IN_S		# downloading time
