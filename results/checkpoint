@@ -1,0 +1,6 @@
+model_checkpoint_path: "nn_model_s_2_ep_50000.ckpt"
+all_model_checkpoint_paths: "nn_model_s_2_ep_48000.ckpt"
+all_model_checkpoint_paths: "nn_model_s_2_ep_48500.ckpt"
+all_model_checkpoint_paths: "nn_model_s_2_ep_49000.ckpt"
+all_model_checkpoint_paths: "nn_model_s_2_ep_49500.ckpt"
+all_model_checkpoint_paths: "nn_model_s_2_ep_50000.ckpt"

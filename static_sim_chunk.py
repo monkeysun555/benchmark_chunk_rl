@@ -47,11 +47,11 @@ TARGET_LATENCY = SERVER_START_UP_TH + 0.5 * SEG_DURATION
 USER_FREEZING_TOL = 3000.0									# Single time freezing time upper bound
 USER_LATENCY_TOL = TARGET_LATENCY + USER_FREEZING_TOL		# Accumulate latency upperbound
 
-STARTING_EPOCH = 0
-NN_MODEL = None
-# STARTING_EPOCH = 30000
-# NN_MODEL = './results/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(STARTING_EPOCH) + '.ckpt'
-TERMINAL_EPOCH = 20000
+# STARTING_EPOCH = 0
+# NN_MODEL = None
+STARTING_EPOCH = 40000
+NN_MODEL = './results/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(STARTING_EPOCH) + '.ckpt'
+TERMINAL_EPOCH = 50000
 
 DEFAULT_ACTION = 0			# lowest bitrate
 ACTION_REWARD = 1.0 * CHUNK_SEG_RATIO	
