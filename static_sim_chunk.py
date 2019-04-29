@@ -15,7 +15,7 @@ if not IF_NEW:
 	S_INFO = 8
 	S_LEN = 12
 else:
-	S_INFO = 8
+	S_INFO = 7
 	S_LEN = 15
 A_DIM = 6	
 ACTOR_LR_RATE = 0.0001
@@ -230,13 +230,13 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 				state[0, -1] = real_chunk_size / (download_duration - rtt) / NOR_BW		# chunk size
 				# state[1, -1] = download_duration / MS_IN_S				# downloading time
 				state[1, -1] = buffer_length / MS_IN_S / NOR_BUFFER			# buffer length
-				state[2, -1] = chunk_number / NOR_CHUNK						# number of chunk sent
-				state[3, -1] = log_bit_rate	/ NOR_RATE						# video bitrate
+				# state[2, -1] = chunk_number / NOR_CHUNK						# number of chunk sent
+				state[2, -1] = log_bit_rate	/ NOR_RATE						# video bitrate
 				# state[4, -1] = latency / MS_IN_S							# accu latency from start up
-				state[4, -1] = sync 										# whether there is resync
-				state[5, -1] = player_state	/ NOR_STATE						# state of player
-				state[6, -1] = server_wait_time / MS_IN_S/ NOR_WAIT			# time of waiting for server
-				state[7, -1] = freezing / MS_IN_S / NOR_FREEZING			# current freezing time
+				state[3, -1] = sync 										# whether there is resync
+				state[4, -1] = player_state	/ NOR_STATE						# state of player
+				state[5, -1] = server_wait_time / MS_IN_S/ NOR_WAIT			# time of waiting for server
+				state[6, -1] = freezing / MS_IN_S / NOR_FREEZING			# current freezing time
 				if DEBUGGING:
 					print(state)
 			else:
