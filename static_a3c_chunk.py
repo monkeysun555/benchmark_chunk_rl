@@ -13,7 +13,7 @@ else:
 	A_DIM = 15
 
 GAMMA = 0.99
-ENTROPY_WEIGHT = 5
+ENTROPY_WEIGHT = 1
 ENTROPY_EPS = 1e-6
 # S_INFO = 4
 
@@ -76,8 +76,8 @@ class ActorNetwork(object):
 				split_3 = tflearn.fully_connected(inputs[:, 3:4, -1], 4, activation='relu')		# Last bitrate
 				split_4 = tflearn.fully_connected(inputs[:, 4:5, -1], 4, activation='relu')		# sync  0/1
 				split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], 4, activation='relu')		# player state 0 or 1
-				split_6 = tflearn.fully_connected(inputs[:, 6:7, -5:], 8, activation='relu')	# server wait
-				split_7 = tflearn.fully_connected(inputs[:, 7:8, -5:], 8, activation='relu')	# freezing
+				split_6 = tflearn.fully_connected(inputs[:, 6:7, -5:], 16, activation='relu')	# server wait
+				split_7 = tflearn.fully_connected(inputs[:, 7:8, -5:], 16, activation='relu')	# freezing
 
 				split_0_flat = tflearn.flatten(split_0)
 				split_1_flat = tflearn.flatten(split_1)
@@ -202,8 +202,8 @@ class CriticNetwork(object):
 				split_3 = tflearn.fully_connected(inputs[:, 3:4, -1], 4, activation='relu')		# Last bitrate
 				split_4 = tflearn.fully_connected(inputs[:, 4:5, -1], 4, activation='relu')		# sync  0/1
 				split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], 4, activation='relu')		# player state 0 or 1
-				split_6 = tflearn.fully_connected(inputs[:, 6:7, -5:], 8, activation='relu')	# server wait
-				split_7 = tflearn.fully_connected(inputs[:, 7:8, -5:], 8, activation='relu')	# freezing
+				split_6 = tflearn.fully_connected(inputs[:, 6:7, -5:], 16, activation='relu')	# server wait
+				split_7 = tflearn.fully_connected(inputs[:, 7:8, -5:], 16, activation='relu')	# freezing
 
 				split_0_flat = tflearn.flatten(split_0)
 				split_1_flat = tflearn.flatten(split_1)

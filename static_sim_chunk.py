@@ -23,7 +23,7 @@ CRITIC_LR_RATE = 0.001
 NUM_AGENTS = 8
 
 TRAIN_SEQ_LEN = 100
-MODEL_SAVE_INTERVAL = 100
+MODEL_SAVE_INTERVAL = 500
 
 # New bitrate setting, 6 actions, correspongding to 240p, 360p, 480p, 720p, 1080p and 1440p(2k)
 BITRATE = [300.0, 500.0, 1000.0, 2000.0, 3000.0, 6000.0]
@@ -49,9 +49,9 @@ USER_LATENCY_TOL = TARGET_LATENCY + USER_FREEZING_TOL		# Accumulate latency uppe
 
 STARTING_EPOCH = 0
 NN_MODEL = None
-# STARTING_EPOCH = 20000
+# STARTING_EPOCH = 30000
 # NN_MODEL = './results/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(STARTING_EPOCH) + '.ckpt'
-TERMINAL_EPOCH = 15000
+TERMINAL_EPOCH = 20000
 
 DEFAULT_ACTION = 0			# lowest bitrate
 ACTION_REWARD = 1.0 * CHUNK_SEG_RATIO	
@@ -72,6 +72,8 @@ NOR_CHUNK = CHUNK_IN_SEG
 NOR_FREEZING = USER_FREEZING_TOL / MS_IN_S
 NOR_RATE = np.log(BITRATE[-1]/BITRATE[0])
 NOR_WAIT = CHUNK_DURATION / MS_IN_S
+NOR_STATE = 2.0	# 0, 1, 2
+
 if not IF_NEW:
 	DATA_DIR = '../bw_traces/'
 else:
@@ -108,7 +110,8 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 		actor.set_network_params(actor_net_params)
 		critic.set_network_params(critic_net_params)
 
-
+		# FOr new trainning, using initial latency as the target
+		t_latency = server.get_time() - player.get_display_time()
 		action_num = DEFAULT_ACTION
 		last_bit_rate = action_num
 		bit_rate = action_num
@@ -145,6 +148,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			download_chunk_end_idx = download_chunk_info[2]
 			download_chunk_size = download_chunk_info[3]
 			chunk_number = download_chunk_end_idx - download_chunk_idx + 1
+			assert chunk_number == 1
 			if DEBUGGING:
 				print("Segment id:", download_seg_idx)
 				print("Chunk number:", chunk_number)
@@ -152,7 +156,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			server_wait_time = 0.0
 			sync = 0
 			missing_count = 0
-			real_chunk_size, download_duration, freezing, time_out, player_state = player.fetch(bit_rate, download_chunk_size, 
+			real_chunk_size, download_duration, freezing, time_out, player_state, rtt = player.fetch(bit_rate, download_chunk_size, 
 																		download_seg_idx, download_chunk_idx, take_action, chunk_number)
 			if DEBUGGING:
 				print("After downloading, chunk size:", real_chunk_size)
@@ -198,7 +202,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			reward = ACTION_REWARD * log_bit_rate * chunk_number \
 					- REBUF_PENALTY * freezing / MS_IN_S \
 					- SMOOTH_PENALTY * np.abs(log_bit_rate - log_last_bit_rate) \
-					- LONG_DELAY_PENALTY*(LONG_DELAY_PENALTY_BASE**(ReLU(latency-TARGET_LATENCY)/ MS_IN_S)-1) * chunk_number \
+					- LONG_DELAY_PENALTY*(LONG_DELAY_PENALTY_BASE**(ReLU(latency - t_latency)/ MS_IN_S)-1) * chunk_number \
 					- MISSING_PENALTY * missing_count
 					# - UNNORMAL_PLAYING_PENALTY*(playing_speed-NORMAL_PLAYING)*download_duration/MS_IN_S
 			if DEBUGGING:
@@ -223,21 +227,18 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			# Establish state for next iteration
 			state = np.roll(state, -1, axis=1)
 			if IF_NEW:
-				temp_download_duration = download_duration
-				if download_chunk_idx == 0:
-					temp_download_duration -= RTT_LOW	# RTT low
-
-				state[0, -1] = real_chunk_size / temp_download_duration / NOR_BW		# chunk size
-				# state[1, -1] = download_duration / MS_IN_S		# downloading time
+				state[0, -1] = real_chunk_size / (download_duration - rtt) / NOR_BW		# chunk size
+				# state[1, -1] = download_duration / MS_IN_S				# downloading time
 				state[1, -1] = buffer_length / MS_IN_S / NOR_BUFFER			# buffer length
 				state[2, -1] = chunk_number / NOR_CHUNK						# number of chunk sent
-				state[3, -1] = log_bit_rate	/ NOR_RATE					# video bitrate
-				# state[4, -1] = latency / MS_IN_S				# accu latency from start up
-				state[4, -1] = sync 							# whether there is resync
-				state[5, -1] = player_state						# state of player
-				state[6, -1] = server_wait_time / MS_IN_S/ NOR_WAIT	# time of waiting for server
-				state[7, -1] = freezing / MS_IN_S / NOR_FREEZING				# current freezing time
-				print(state)
+				state[3, -1] = log_bit_rate	/ NOR_RATE						# video bitrate
+				# state[4, -1] = latency / MS_IN_S							# accu latency from start up
+				state[4, -1] = sync 										# whether there is resync
+				state[5, -1] = player_state	/ NOR_STATE						# state of player
+				state[6, -1] = server_wait_time / MS_IN_S/ NOR_WAIT			# time of waiting for server
+				state[7, -1] = freezing / MS_IN_S / NOR_FREEZING			# current freezing time
+				if DEBUGGING:
+					print(state)
 			else:
 				state[0, -1] = real_chunk_size / KB_IN_MB 		# chunk size
 				state[1, -1] = download_duration / MS_IN_S		# downloading time
@@ -352,6 +353,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 					# Reset player and server
 					player.reset(USER_START_UP_TH)
 					server.test_reset(SERVER_START_UP_TH)
+					t_latency = server.get_time() - player.get_display_time()
 				else:
 					s_batch.append(state)
 					state = np.array(s_batch[-1], copy=True)
