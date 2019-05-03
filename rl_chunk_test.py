@@ -8,6 +8,7 @@ import live_player_testing as live_player
 import live_server_testing as live_server
 import static_a3c_chunk as a3c
 import load
+import math
 
 IF_NEW = 1
 IF_ALL_TESTING = 0
@@ -58,7 +59,17 @@ RATIO_HIGH_2 = 10.0			# This is the highest ratio between first chunk and the su
 RATIO_LOW_5 = 0.75				# This is the lowest ratio between first chunk and the sum of all others
 RATIO_HIGH_5 = 1.0			# This is the highest ratio between first chunk and the sum of all others
 
-TEST_TRACE_NUM = 1
+NOR_BW = 10.0
+NOR_CHUNK_SIZE = BITRATE[-1] / CHUNK_IN_SEG
+NOR_BUFFER = USER_LATENCY_TOL / MS_IN_S
+NOR_CHUNK = CHUNK_IN_SEG
+NOR_FREEZING = USER_FREEZING_TOL / MS_IN_S
+NOR_RATE = np.log(BITRATE[-1]/BITRATE[0])
+NOR_WAIT = CHUNK_DURATION / MS_IN_S
+NOR_STATE = 2.0	# 0, 1, 2
+
+
+# TEST_TRACE_NUM = 1
 LOG_FILE_DIR = './test_results'
 LOG_FILE = LOG_FILE_DIR + '/RLChunk'
 
@@ -77,7 +88,7 @@ else:
 	END_EPOCH =  90000				# <========================= CHANGE MODELS, 105000 is the best right now, for sync mode, new_traces
 	# For sync mode
 	DATA_DIR = '../new_traces/test_sim_traces/'
-	TRACE_NAME = 'norway_car_10'
+	TRACE_NAME = 'norway_train_10'
 	NN_MODEL = './new_models/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(END_EPOCH) + '.ckpt'
 
 # TEST_TRACES = '../test_traces/'
@@ -86,6 +97,9 @@ else:
 
 def ReLU(x):
 	return x * (x > 0)
+
+def lat_penalty(x):
+	return 1.0/(1+math.exp(2.0-0.5*x)) - 1.0/(1+math.exp(2.0))
 
 def record_tp(tp_trace, time_trace, starting_time_idx, duration):
 	tp_record = []
@@ -205,13 +219,14 @@ def main():
 				download_chunk_end_idx = download_chunk_info[2]
 				download_chunk_size = download_chunk_info[3][bit_rate]		# Might be several chunks
 				chunk_number = download_chunk_end_idx - download_chunk_idx + 1
+				assert chunk_number == 1
 				if IF_NEW:
 					if download_seg_idx >= TEST_DURATION:
 						break
 				server_wait_time = 0.0	
 				sync = 0
 				missing_count = 0
-				real_chunk_size, download_duration, freezing, time_out, player_state = player.fetch(download_chunk_size, 
+				real_chunk_size, download_duration, freezing, time_out, player_state, rtt = player.fetch(download_chunk_size, 
 																		download_seg_idx, download_chunk_idx, take_action, chunk_number)
 				take_action = 0
 				buffer_length = player.get_buffer_length()
@@ -258,7 +273,7 @@ def main():
 					reward = ACTION_REWARD * log_bit_rate * chunk_number \
 							- REBUF_PENALTY * freezing / MS_IN_S \
 							- SMOOTH_PENALTY * np.abs(log_bit_rate - log_last_bit_rate) \
-							- LONG_DELAY_PENALTY*(LONG_DELAY_PENALTY_BASE**(ReLU(latency-TARGET_LATENCY)/ MS_IN_S)-1) * chunk_number \
+							- LONG_DELAY_PENALTY*(lat_penalty(latency/MS_IN_S)) * chunk_number \
 							- MISSING_PENALTY * missing_count
 							# - UNNORMAL_PLAYING_PENALTY*(playing_speed-NORMAL_PLAYING)*download_duration/MS_IN_S
 				# print(reward)
@@ -294,16 +309,16 @@ def main():
 
 				else:
 					# FOR NEW_TRACES
-					state[0, -1] = real_chunk_size / KB_IN_MB 		# chunk size
-					state[1, -1] = download_duration / MS_IN_S		# downloading time
-					state[2, -1] = buffer_length / MS_IN_S			# buffer length
-					state[3, -1] = chunk_number
-					state[4, -1] = log_bit_rate 					# video bitrate
-					# state[4, -1] = latency / MS_IN_S				# accu latency from start up
-					state[5, -1] = sync 							# whether there is resync
-					state[6, -1] = player_state						# state of player
-					state[7, -1] = server_wait_time / MS_IN_S		# time of waiting for server
-					state[8, -1] = freezing / MS_IN_S				# current freezing time
+					state[0, -1] = real_chunk_size / NOR_CHUNK_SIZE				# chunk size
+					state[1, -1] = (download_duration - rtt) / MS_IN_S			# downloading time
+					state[2, -1] = buffer_length / MS_IN_S / NOR_BUFFER			# buffer length
+					# state[2, -1] = chunk_number / NOR_CHUNK					# number of chunk sent
+					state[3, -1] = log_bit_rate	/ NOR_RATE						# video bitrate
+					# state[4, -1] = latency / MS_IN_S							# accu latency from start up
+					state[4, -1] = sync 										# whether there is resync
+					state[5, -1] = player_state	/ NOR_STATE						# state of player
+					state[6, -1] = server_wait_time / MS_IN_S/ NOR_WAIT			# time of waiting for server
+					state[7, -1] = freezing / MS_IN_S / NOR_FREEZING			# current freezing time
 				# print "Current index is: ", i, " and state is: ", state
 				# generate next set of seg size
 				# if add this, this will return to environment

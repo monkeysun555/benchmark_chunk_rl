@@ -64,13 +64,16 @@ class Live_Server(object):
 	def generate_next_delivery(self):
 		deliver_chunks = []
 		deliver_chunks.append(self.chunks.pop(0))
-		deliver_end = 0
-		for i in range(len(self.chunks)):
-			if not self.chunks[i][0] == deliver_chunks[-1][0]:
-				break
-			deliver_end += 1
-		deliver_chunks.extend(self.chunks[:deliver_end])
-		del self.chunks[:deliver_end]
+		# Should still do chunk based streaming if there is a segment.
+		# Otherwise there is no benefit from chunk streaming while buffer is low
+		# deliver_end = 0
+		# for i in range(len(self.chunks)):
+		# 	# Check how many chunks can be deliveryed together
+		# 	if not self.chunks[i][0] == deliver_chunks[-1][0]:
+		# 		break
+		# 	deliver_end += 1
+		# deliver_chunks.extend(self.chunks[:deliver_end])
+		# del self.chunks[:deliver_end]
 		self.next_delivery.extend(deliver_chunks[0][:2])
 		self.next_delivery.append(deliver_chunks[-1][1])
 		delivery_sizes = []

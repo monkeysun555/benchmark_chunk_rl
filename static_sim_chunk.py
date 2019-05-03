@@ -8,22 +8,22 @@ import live_player
 import live_server
 import static_a3c_chunk as a3c
 import load
+import math
 
-IF_NEW = 1
+IF_NEW = 0
 DEBUGGING = 0
-if not IF_NEW:
-	S_INFO = 8
-	S_LEN = 12
-else:
-	S_INFO = 8
-	S_LEN = 15
+# S_INFO = 8
+# S_LEN = 12
+S_INFO = 8
+S_LEN = 15
+
 A_DIM = 6	
 ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
-NUM_AGENTS = 8
+NUM_AGENTS = 1
 
 TRAIN_SEQ_LEN = 100
-MODEL_SAVE_INTERVAL = 500
+MODEL_SAVE_INTERVAL = 50
 
 # New bitrate setting, 6 actions, correspongding to 240p, 360p, 480p, 720p, 1080p and 1440p(2k)
 BITRATE = [300.0, 500.0, 1000.0, 2000.0, 3000.0, 6000.0]
@@ -39,7 +39,7 @@ CHUNK_DURATION = 200.0
 CHUNK_IN_SEG = SEG_DURATION/CHUNK_DURATION
 CHUNK_SEG_RATIO = CHUNK_DURATION/SEG_DURATION
 # Initial buffer length on server side
-SERVER_START_UP_TH = 2000.0				# <========= TO BE MODIFIED. TEST WITH DIFFERENT VALUES
+SERVER_START_UP_TH = 4000.0				# <========= TO BE MODIFIED. TEST WITH DIFFERENT VALUES
 # how user will start playing video (user buffer)
 USER_START_UP_TH = 2000.0
 # set a target latency, then use fast playing to compensate
@@ -47,24 +47,24 @@ TARGET_LATENCY = SERVER_START_UP_TH + 0.5 * SEG_DURATION
 USER_FREEZING_TOL = 3000.0									# Single time freezing time upper bound
 USER_LATENCY_TOL = TARGET_LATENCY + USER_FREEZING_TOL		# Accumulate latency upperbound
 
-# STARTING_EPOCH = 0
-# NN_MODEL = None
-STARTING_EPOCH = 40000
-NN_MODEL = './results/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(STARTING_EPOCH) + '.ckpt'
+STARTING_EPOCH = 0
+NN_MODEL = None
+# STARTING_EPOCH = 40000
+# NN_MODEL = './results/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(STARTING_EPOCH) + '.ckpt'
 TERMINAL_EPOCH = 50000
 
 DEFAULT_ACTION = 0			# lowest bitrate
 ACTION_REWARD = 1.0 * CHUNK_SEG_RATIO	
-REBUF_PENALTY = 3.0		# for second
+REBUF_PENALTY = 6.0		# for second
 SMOOTH_PENALTY = 1.0
-LONG_DELAY_PENALTY = 5.0 * CHUNK_SEG_RATIO 
-LONG_DELAY_PENALTY_BASE = 1.2	# for second
-MISSING_PENALTY = 3.0 * CHUNK_SEG_RATIO	# not included
+MISSING_PENALTY = 6.0 * CHUNK_SEG_RATIO	# not included
+LONG_DELAY_PENALTY = 4.0 * CHUNK_SEG_RATIO 
+CONST = 6.0
+X_RATIO = 1.0
 # UNNORMAL_PLAYING_PENALTY = 1.0 * CHUNK_FRAG_RATIO
 # FAST_PLAYING = 1.1		# For 1
 # NORMAL_PLAYING = 1.0	# For 0
 # SLOW_PLAYING = 0.9		# For -1
-RTT_LOW = 30.0
 
 NOR_BW = 10.0
 NOR_CHUNK_SIZE = BITRATE[-1] / CHUNK_IN_SEG
@@ -87,6 +87,9 @@ LOG_FILE = './results/log'
 
 def ReLU(x):
 	return x * (x > 0)
+
+def lat_penalty(x):
+	return 1.0/(1+math.exp(CONST-X_RATIO*x)) - 1.0/(1+math.exp(CONST))
 
 def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue):
 
@@ -184,8 +187,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 				sync = 1
 
 			if sync:
-				if not IF_NEW:
-					video_terminate = 1
+
 				if DEBUGGING:
 					print("Sync happens, latnecy will change")
 				# To sync player, enter start up phase, buffer becomes zero
@@ -193,6 +195,15 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 				player.sync_playing(sync_time)
 				buffer_length = player.get_buffer()
 
+			if server.check_chunks_empty():
+				server_wait_time = server.wait()
+				assert server_wait_time > 0.0
+				assert server_wait_time < CHUNK_DURATION
+				# print("Before wait, player time:", player.get_display_time())
+				player.wait(server_wait_time)
+				# print("After wait, player time:", player.get_display_time())
+				buffer_length = player.get_buffer()
+				
 			latency = server.get_time() - player.get_display_time()
 			player_state = player.get_state()
 
@@ -203,7 +214,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 			reward = ACTION_REWARD * log_bit_rate * chunk_number \
 					- REBUF_PENALTY * freezing / MS_IN_S \
 					- SMOOTH_PENALTY * np.abs(log_bit_rate - log_last_bit_rate) \
-					- LONG_DELAY_PENALTY*(LONG_DELAY_PENALTY_BASE**(ReLU(latency - t_latency)/ MS_IN_S)-1) * chunk_number \
+					- LONG_DELAY_PENALTY * lat_penalty(latency/ MS_IN_S) * chunk_number \
 					- MISSING_PENALTY * missing_count
 					# - UNNORMAL_PLAYING_PENALTY*(playing_speed-NORMAL_PLAYING)*download_duration/MS_IN_S
 			if DEBUGGING:
@@ -211,14 +222,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 									 - LONG_DELAY_PENALTY*((LONG_DELAY_PENALTY_BASE**(ReLU(latency-TARGET_LATENCY)/ MS_IN_S))-1) * chunk_number, - MISSING_PENALTY * missing_count)
 			action_reward += reward
 			# chech whether need to wait, using number of available segs
-			if server.check_chunks_empty():
-				server_wait_time = server.wait()
-				assert server_wait_time > 0.0
-				assert server_wait_time < CHUNK_DURATION
-				# print("Before wait, player time:", player.get_display_time())
-				player.wait(server_wait_time)
-				# print("After wait, player time:", player.get_display_time())
-				buffer_length = player.get_buffer()
+
 			server.generate_next_delivery()
 			# print("After waiting, latency is:", server.get_time() - player.get_display_time())
 			# print("<===============================>")
@@ -227,30 +231,31 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 
 			# Establish state for next iteration
 			state = np.roll(state, -1, axis=1)
-			if IF_NEW:
-				state[0, -1] = real_chunk_size / NOR_CHUNK_SIZE				# chunk size
-				state[1, -1] = (download_duration - rtt) / MS_IN_S			# downloading time
-				state[2, -1] = buffer_length / MS_IN_S / NOR_BUFFER			# buffer length
-				# state[2, -1] = chunk_number / NOR_CHUNK					# number of chunk sent
-				state[3, -1] = log_bit_rate	/ NOR_RATE						# video bitrate
-				# state[4, -1] = latency / MS_IN_S							# accu latency from start up
-				state[4, -1] = sync 										# whether there is resync
-				state[5, -1] = player_state	/ NOR_STATE						# state of player
-				state[6, -1] = server_wait_time / MS_IN_S/ NOR_WAIT			# time of waiting for server
-				state[7, -1] = freezing / MS_IN_S / NOR_FREEZING			# current freezing time
-				if DEBUGGING:
-					print(state)
-			else:
-				state[0, -1] = real_chunk_size / KB_IN_MB 		# chunk size
-				state[1, -1] = download_duration / MS_IN_S		# downloading time
-				state[2, -1] = buffer_length / MS_IN_S			# buffer length
-				state[3, -1] = chunk_number						# number of chunk sent
-				state[4, -1] = log_bit_rate						# video bitrate
-				# state[4, -1] = latency / MS_IN_S				# accu latency from start up
-				state[5, -1] = sync 							# whether there is resync
-				# state[6, -1] = player_state					# state of player
-				state[6, -1] = server_wait_time / MS_IN_S		# time of waiting for server
-				state[7, -1] = freezing / MS_IN_S				# current freezing time
+			# New
+			state[0, -1] = real_chunk_size / NOR_CHUNK_SIZE				# chunk size
+			state[1, -1] = (download_duration - rtt) / MS_IN_S			# downloading time
+			state[2, -1] = buffer_length / MS_IN_S / NOR_BUFFER			# buffer length
+			# state[2, -1] = chunk_number / NOR_CHUNK					# number of chunk sent
+			state[3, -1] = log_bit_rate	/ NOR_RATE						# video bitrate
+			# state[4, -1] = latency / MS_IN_S							# accu latency from start up
+			state[4, -1] = sync 										# whether there is resync
+			state[5, -1] = player_state	/ NOR_STATE						# state of player
+			state[6, -1] = server_wait_time / MS_IN_S/ NOR_WAIT			# time of waiting for server
+			state[7, -1] = freezing / MS_IN_S / NOR_FREEZING			# current freezing time
+			if DEBUGGING:
+				print(state)
+
+			# Old input
+			# state[0, -1] = real_chunk_size / KB_IN_MB 		# chunk size
+			# state[1, -1] = download_duration / MS_IN_S		# downloading time
+			# state[2, -1] = buffer_length / MS_IN_S			# buffer length
+			# state[3, -1] = chunk_number						# number of chunk sent
+			# state[4, -1] = log_bit_rate						# video bitrate
+			# # state[4, -1] = latency / MS_IN_S				# accu latency from start up
+			# state[5, -1] = sync 							# whether there is resync
+			# # state[6, -1] = player_state					# state of player
+			# state[6, -1] = server_wait_time / MS_IN_S		# time of waiting for server
+			# state[7, -1] = freezing / MS_IN_S				# current freezing time
 			# print state
 			# generate next set of seg size
 			# if add this, this will return to environment
@@ -348,6 +353,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 					action_vec = np.zeros(A_DIM)
 					action_vec[bit_rate] = 1
 					s_batch.append(np.zeros((S_INFO, S_LEN)))
+					state = np.array(s_batch[-1], copy=True)		
 					a_batch.append(action_vec)
 					video_terminate = 0
 
