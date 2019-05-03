@@ -50,7 +50,7 @@ USER_LATENCY_TOL = TARGET_LATENCY + USER_FREEZING_TOL		# Accumulate latency uppe
 STARTING_EPOCH = 0
 NN_MODEL = None
 # STARTING_EPOCH = 40000
-# NN_MODEL = './results/nn_model_s_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(STARTING_EPOCH) + '.ckpt'
+# NN_MODEL = './results/nn_model_s_' + str(IF_NEW)  + '_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(STARTING_EPOCH) + '.ckpt'
 TERMINAL_EPOCH = 50000
 
 DEFAULT_ACTION = 0			# lowest bitrate
@@ -203,7 +203,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 				player.wait(server_wait_time)
 				# print("After wait, player time:", player.get_display_time())
 				buffer_length = player.get_buffer()
-				
+
 			latency = server.get_time() - player.get_display_time()
 			player_state = player.get_state()
 
@@ -478,7 +478,7 @@ def central_agent(net_params_queues, exp_queues):
 			if epoch % MODEL_SAVE_INTERVAL == 0:
 				# Save the neural net parameters to disk.
 				print("epoch is: " + str(epoch) + ", and going to save")
-				save_path = saver.save(sess, SUMMARY_DIR + "/nn_model_s_" + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + 
+				save_path = saver.save(sess, SUMMARY_DIR + "/nn_model_s_" + str(IF_NEW)  + '_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + 
 									   str(epoch) + ".ckpt")
 				logging.info("Model saved in file: " + save_path)
 				print('Epoch: ' + str(epoch) +
