@@ -10,7 +10,7 @@ import static_a3c_chunk as a3c
 import load
 import math
 
-IF_NEW = 1
+IF_NEW = 0
 IF_ALL_TESTING = 1
 A_DIM = 6
 ACTOR_LR_RATE = 0.0001
@@ -75,11 +75,12 @@ END_EPOCH =  90000				# <========================= CHANGE MODELS, 105000 is the 
 
 if not IF_NEW:
 	# For bw_traces
-	DATA_DIR = '../bw_traces/'
+	DATA_DIR = '../../bw_traces_test/cooked_test_traces/'
 	TRACE_NAME = '70ms_loss0.5_m5.txt'	# For bw_traces
 	NN_MODEL = './new0_models/nn_model_s_' + str(IF_NEW)  + '_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(END_EPOCH) + '.ckpt'
 else:
 	# For sync mode
+	NOR_BW = 5.0
 	DATA_DIR = '../new_traces/test_sim_traces/'
 	TRACE_NAME = 'norway_car_2'
 	NN_MODEL = './new1_models/nn_model_s_' + str(IF_NEW)  + '_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(END_EPOCH) + '.ckpt'
@@ -88,10 +89,17 @@ if not IF_ALL_TESTING:
 	LOG_FILE_DIR = './test_results'
 	LOG_FILE = LOG_FILE_DIR + '/RL\'_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + 's'
 else:
-	LOG_FILE_DIR = './all_test_results'
-	LOG_FILE = LOG_FILE_DIR + '/RL\'_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + 's'
-	ALL_TESTING_DIR = '../algorithms/all_results/'
-	ALL_TESTING_FILE = ALL_TESTING_DIR + 'RL\'_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + 's.txt'
+	if IF_NEW:
+		LOG_FILE_DIR = './all_test_results'
+		LOG_FILE = LOG_FILE_DIR + '/RL\'_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + 's'
+		ALL_TESTING_DIR = '../algorithms/all_results/'
+		ALL_TESTING_FILE = ALL_TESTING_DIR + 'RL\'_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + 's.txt'
+	else:
+		LOG_FILE_DIR = './all_test_results_old'
+		LOG_FILE = LOG_FILE_DIR + '/RL\'_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + 's'
+		ALL_TESTING_DIR = '../algorithms/all_results_old/'
+		ALL_TESTING_FILE = ALL_TESTING_DIR + 'RL\'_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + 's.txt'
+	
 
 
 # TEST_TRACES = '../test_traces/'
