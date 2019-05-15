@@ -34,7 +34,7 @@ CHUNK_SEG_RATIO = CHUNK_DURATION/SEG_DURATION
 CHUNK_IN_SEG = SEG_DURATION/CHUNK_DURATION
 
 # Initial buffer length on server side
-SERVER_START_UP_TH = 2000.0				# <========= TO BE MODIFIED. TEST WITH DIFFERENT VALUES
+SERVER_START_UP_TH = 4000.0				# <========= TO BE MODIFIED. TEST WITH DIFFERENT VALUES
 # how user will start playing video (user buffer)
 USER_START_UP_TH = 2000.0
 # set a target latency, then use fast playing to compensate
@@ -75,7 +75,7 @@ END_EPOCH =  90000				# <========================= CHANGE MODELS, 105000 is the 
 
 if not IF_NEW:
 	# For bw_traces
-	DATA_DIR = '../../bw_traces_test/cooked_test_traces/'
+	DATA_DIR = '../bw_traces_test/cooked_test_traces/'
 	TRACE_NAME = '70ms_loss0.5_m5.txt'	# For bw_traces
 	NN_MODEL = './new0_models/nn_model_s_' + str(IF_NEW)  + '_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(END_EPOCH) + '.ckpt'
 else:
