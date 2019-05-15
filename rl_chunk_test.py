@@ -80,7 +80,6 @@ if not IF_NEW:
 	NN_MODEL = './new0_models/nn_model_s_' + str(IF_NEW)  + '_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(END_EPOCH) + '.ckpt'
 else:
 	# For sync mode
-	NOR_BW = 5.0
 	DATA_DIR = '../new_traces/test_sim_traces/'
 	TRACE_NAME = 'norway_car_2'
 	NN_MODEL = './new1_models/nn_model_s_' + str(IF_NEW)  + '_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(END_EPOCH) + '.ckpt'
