@@ -23,7 +23,7 @@ CRITIC_LR_RATE = 0.001
 NUM_AGENTS = 1
 
 TRAIN_SEQ_LEN = 100
-MODEL_SAVE_INTERVAL = 50
+MODEL_SAVE_INTERVAL = 500
 
 # New bitrate setting, 6 actions, correspongding to 240p, 360p, 480p, 720p, 1080p and 1440p(2k)
 BITRATE = [300.0, 500.0, 1000.0, 2000.0, 3000.0, 6000.0]
@@ -187,7 +187,6 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 				sync = 1
 
 			if sync:
-
 				if DEBUGGING:
 					print("Sync happens, latnecy will change")
 				# To sync player, enter start up phase, buffer becomes zero
