@@ -16,11 +16,11 @@ A_DIM = 6
 ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
 
-TEST_DURATION = 100				# Number of testing <===================== Change length here
+TEST_DURATION = 200				# Number of testing <===================== Change length here
 # BITRATE = [500.0, 2000.0, 5000.0, 8000.0, 16000.0]  # 5 actions
 BITRATE = [300.0, 500.0, 1000.0, 2000.0, 3000.0, 6000.0]
 
-RANDOM_SEED = 13
+RANDOM_SEED = 10
 RAND_RANGE = 1000
 BITRATE_LOW_NOISE = 0.95
 BITRATE_HIGH_NOISE = 1.05
@@ -34,7 +34,7 @@ CHUNK_SEG_RATIO = CHUNK_DURATION/SEG_DURATION
 CHUNK_IN_SEG = SEG_DURATION/CHUNK_DURATION
 
 # Initial buffer length on server side
-SERVER_START_UP_TH = 4000.0				# <========= TO BE MODIFIED. TEST WITH DIFFERENT VALUES
+SERVER_START_UP_TH = 3000.0				# <========= TO BE MODIFIED. TEST WITH DIFFERENT VALUES
 # how user will start playing video (user buffer)
 USER_START_UP_TH = 2000.0
 # set a target latency, then use fast playing to compensate
@@ -47,7 +47,7 @@ ACTION_REWARD = 1.0 * CHUNK_SEG_RATIO
 REBUF_PENALTY = 6.0		# for second
 SMOOTH_PENALTY = 1.0
 MISSING_PENALTY = 6.0 * CHUNK_SEG_RATIO	# not included
-LONG_DELAY_PENALTY = 4.0 * CHUNK_SEG_RATIO 
+LONG_DELAY_PENALTY = 3.0 * CHUNK_SEG_RATIO 
 CONST = 6.0
 X_RATIO = 1.0
 # UNNORMAL_PLAYING_PENALTY = 1.0 * CHUNK_FRAG_RATIO
@@ -91,12 +91,12 @@ else:
 	if IF_NEW:
 		LOG_FILE_DIR = './all_test_results'
 		LOG_FILE = LOG_FILE_DIR + '/RL\'_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + 's'
-		ALL_TESTING_DIR = '../algorithms/all_results/'
+		ALL_TESTING_DIR = '../benchmark_compare/all_results/'
 		ALL_TESTING_FILE = ALL_TESTING_DIR + 'RL\'_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + 's.txt'
 	else:
 		LOG_FILE_DIR = './all_test_results_old'
 		LOG_FILE = LOG_FILE_DIR + '/RL\'_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + 's'
-		ALL_TESTING_DIR = '../algorithms/all_results_old/'
+		ALL_TESTING_DIR = '../benchmark_compare/all_results_old/'
 		ALL_TESTING_FILE = ALL_TESTING_DIR + 'RL\'_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + 's.txt'
 	
 

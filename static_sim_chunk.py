@@ -20,10 +20,10 @@ S_LEN = 15
 A_DIM = 6	
 ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
-NUM_AGENTS = 1
+NUM_AGENTS = 8
 
 TRAIN_SEQ_LEN = 100
-MODEL_SAVE_INTERVAL = 500
+MODEL_SAVE_INTERVAL = 1000
 
 # New bitrate setting, 6 actions, correspongding to 240p, 360p, 480p, 720p, 1080p and 1440p(2k)
 BITRATE = [300.0, 500.0, 1000.0, 2000.0, 3000.0, 6000.0]
@@ -39,7 +39,7 @@ CHUNK_DURATION = 200.0
 CHUNK_IN_SEG = SEG_DURATION/CHUNK_DURATION
 CHUNK_SEG_RATIO = CHUNK_DURATION/SEG_DURATION
 # Initial buffer length on server side
-SERVER_START_UP_TH = 4000.0				# <========= TO BE MODIFIED. TEST WITH DIFFERENT VALUES
+SERVER_START_UP_TH = 3000.0				# <========= TO BE MODIFIED. TEST WITH DIFFERENT VALUES
 # how user will start playing video (user buffer)
 USER_START_UP_TH = 2000.0
 # set a target latency, then use fast playing to compensate
@@ -47,11 +47,11 @@ TARGET_LATENCY = SERVER_START_UP_TH + 0.5 * SEG_DURATION
 USER_FREEZING_TOL = 3000.0									# Single time freezing time upper bound
 USER_LATENCY_TOL = TARGET_LATENCY + USER_FREEZING_TOL		# Accumulate latency upperbound
 
-STARTING_EPOCH = 0
-NN_MODEL = None
-# STARTING_EPOCH = 40000
-# NN_MODEL = './results/nn_model_s_' + str(IF_NEW)  + '_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(STARTING_EPOCH) + '.ckpt'
-TERMINAL_EPOCH = 50000
+# STARTING_EPOCH = 0
+# NN_MODEL = None
+STARTING_EPOCH = 80000
+NN_MODEL = './results/nn_model_s_' + str(IF_NEW)  + '_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(STARTING_EPOCH) + '.ckpt'
+TERMINAL_EPOCH = 90000
 
 DEFAULT_ACTION = 0			# lowest bitrate
 ACTION_REWARD = 1.0 * CHUNK_SEG_RATIO	
