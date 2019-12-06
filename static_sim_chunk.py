@@ -47,11 +47,12 @@ TARGET_LATENCY = SERVER_START_UP_TH + 0.5 * SEG_DURATION
 USER_FREEZING_TOL = 3000.0									# Single time freezing time upper bound
 USER_LATENCY_TOL = TARGET_LATENCY + USER_FREEZING_TOL		# Accumulate latency upperbound
 
+STARTING_EPOCH = 0
+NN_MODEL = None
 # STARTING_EPOCH = 0
-# NN_MODEL = None
-STARTING_EPOCH = 80000
-NN_MODEL = './results/nn_model_s_' + str(IF_NEW)  + '_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(STARTING_EPOCH) + '.ckpt'
+# NN_MODEL = './results/nn_model_s_' + str(IF_NEW)  + '_' + str(int(SERVER_START_UP_TH/MS_IN_S)) + '_ep_' + str(STARTING_EPOCH) + '.ckpt'
 TERMINAL_EPOCH = 90000
+INITIAL_ENTROPY_WEIGHT = 5.0
 
 DEFAULT_ACTION = 0			# lowest bitrate
 ACTION_REWARD = 1.0 * CHUNK_SEG_RATIO	
@@ -104,7 +105,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 	with tf.Session() as sess, open(LOG_FILE + '_' + str(int(SERVER_START_UP_TH/MS_IN_S)) +'_agent_' + str(agent_id), 'wb') as log_file:
 		actor = a3c.ActorNetwork(sess,
 								 state_dim=[S_INFO, S_LEN], action_dim=A_DIM,
-								 learning_rate=ACTOR_LR_RATE)
+								 learning_rate=ACTOR_LR_RATE, entropy_weight=INITIAL_ENTROPY_WEIGHT)
 		critic = a3c.CriticNetwork(sess,
 								   state_dim=[S_INFO, S_LEN],
 								   learning_rate=CRITIC_LR_RATE)
@@ -376,11 +377,14 @@ def central_agent(net_params_queues, exp_queues):
 						filemode='w',
 						level=logging.INFO)
 
+	last_entropy_weight = None
+	last_actor_learning_rate = None
+	last_critic_learning_rate = None
 	# with tf.Session() as sess, open(LOG_FILE + '_test', 'wb') as test_log_file:
 	with tf.Session() as sess:
 		actor = a3c.ActorNetwork(sess,
 									state_dim=[S_INFO, S_LEN], action_dim=A_DIM,
-									learning_rate=ACTOR_LR_RATE)
+									learning_rate=ACTOR_LR_RATE, entropy_weight=INITIAL_ENTROPY_WEIGHT)
 		critic = a3c.CriticNetwork(sess,
 									state_dim=[S_INFO, S_LEN],
 									learning_rate=CRITIC_LR_RATE)
@@ -400,10 +404,28 @@ def central_agent(net_params_queues, exp_queues):
 		epoch = STARTING_EPOCH
 
 		while epoch < TERMINAL_EPOCH:
+			# Change entropy_weight according to epochs
+			if epoch%10000 == 0:
+				entropy_weight = get_entropy_weight(epoch)
+				actor_learning_rate, critic_learning_rate = get_learning_rate(epoch)
+				if not last_entropy_weight == entropy_weight:
+					# actor.change_entropy_weight(entropy_weight)
+					sess.run(actor.entropy_weight.assign(entropy_weight))
+					print("entropy change from: ", last_entropy_weight, " to ", entropy_weight)
+					print("Epoch: ", epoch)
+				if not last_actor_learning_rate == actor_learning_rate or not last_critic_learning_rate == critic_learning_rate:
+					sess.run(actor.lr_rate.assign(actor_learning_rate))
+					sess.run(actor.lr_rate.assign(critic_learning_rate))
+					print("learning rate change from: ", last_actor_learning_rate, last_critic_learning_rate, " to ", actor_learning_rate, critic_learning_rate)
+					print("Epoch: ", epoch)
+				last_entropy_weight = entropy_weight
+				last_actor_learning_rate = actor_learning_rate
+				last_critic_learning_rate = critic_learning_rate
+
 			# synchronize the network parameters of work agent
 			actor_net_params = actor.get_network_params()
 			critic_net_params = critic.get_network_params()
-			for i in xrange(NUM_AGENTS):
+			for i in range(NUM_AGENTS):
 				net_params_queues[i].put([actor_net_params, critic_net_params])
 
 			total_batch_len = 0.0
@@ -415,7 +437,7 @@ def central_agent(net_params_queues, exp_queues):
 			actor_gradient_batch = []
 			critic_gradient_batch = []
 
-			for i in xrange(NUM_AGENTS):
+			for i in range(NUM_AGENTS):
 				s_batch, a_batch, r_batch, info = exp_queues[i].get()
 				if len(s_batch) == 0:
 					continue
@@ -441,13 +463,13 @@ def central_agent(net_params_queues, exp_queues):
 			assert len(actor_gradient_batch) == len(critic_gradient_batch)
 			# assembled_actor_gradient = actor_gradient_batch[0]
 			# assembled_critic_gradient = critic_gradient_batch[0]
-			# for i in xrange(len(actor_gradient_batch) - 1):
-			#     for j in xrange(len(assembled_actor_gradient)):
+			# for i in range(len(actor_gradient_batch) - 1):
+			#     for j in range(len(assembled_actor_gradient)):
 			#             assembled_actor_gradient[j] += actor_gradient_batch[i][j]
 			#             assembled_critic_gradient[j] += critic_gradient_batch[i][j]
 			# actor.apply_gradients(assembled_actor_gradient)
 			# critic.apply_gradients(assembled_critic_gradient)
-			for i in xrange(len(actor_gradient_batch)):
+			for i in range(len(actor_gradient_batch)):
 				actor.apply_gradients(actor_gradient_batch[i])
 				critic.apply_gradients(critic_gradient_batch[i])
 
@@ -503,7 +525,7 @@ def main():
 	# inter-process communication queues
 	net_params_queues = []
 	exp_queues = []
-	for i in xrange(NUM_AGENTS):
+	for i in range(NUM_AGENTS):
 		net_params_queues.append(mp.Queue(1))
 		exp_queues.append(mp.Queue(1))
 
@@ -523,14 +545,38 @@ def main():
 	# print(all_cooked_time)
 	# print(all_cooked_bw)
 	agents = []
-	for i in xrange(NUM_AGENTS):
+	for i in range(NUM_AGENTS):
 		agents.append(mp.Process(target=agent,
 								 args=(i, all_cooked_time, all_cooked_bw, net_params_queues[i], exp_queues[i])))
-	for i in xrange(NUM_AGENTS):
+	for i in range(NUM_AGENTS):
 		agents[i].start()
 
 	# wait unit training is done
 	coordinator.join()
+
+def get_learning_rate(epoch):
+	if epoch < 70000:
+		return 0.0001, 0.001
+	else:
+		return 0.00005, 0.0005
+
+def get_entropy_weight(epoch):
+	if epoch < 20000:
+		return INITIAL_ENTROPY_WEIGHT
+	elif epoch < 30000:
+		return 2.5
+	elif epoch < 40000:
+		return 1.0
+	elif epoch < 50000:
+		return 0.8
+	elif epoch < 60000:
+		return 0.6
+	elif epoch < 70000:
+		return 0.4
+	elif epoch < 80000:
+		return 0.2
+	elif epoch < 90000:
+		return 0.0
 
 
 if __name__ == '__main__':

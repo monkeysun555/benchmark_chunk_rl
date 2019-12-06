@@ -1,10 +1,7 @@
-# Difference between static_a3c and dyn_a3c:
-# 1: Static does not have latency input
-
-
 import numpy as np
 import tensorflow as tf
 import tflearn
+from tflearn.layers.recurrent import bidirectional_rnn, BasicLSTMCell
 
 
 A_DIM = 15
@@ -20,11 +17,11 @@ class ActorNetwork(object):
 	Input to the network is the state, output is the distribution
 	of all actions.
 	"""
-	def __init__(self, sess, state_dim, action_dim, learning_rate):
+	def __init__(self, sess, state_dim, action_dim, learning_rate, entropy_weight=5.0):
 		self.sess = sess
 		self.s_dim = state_dim
 		self.a_dim = action_dim
-		self.lr_rate = learning_rate
+		self.lr_rate = tf.Variable(learning_rate, name="learning_rate")
 
 		# Create the actor network
 		self.inputs, self.out = self.create_actor_network()
@@ -48,6 +45,9 @@ class ActorNetwork(object):
 		# This gradient will be provided by the critic network
 		self.act_grad_weights = tf.placeholder(tf.float32, [None, 1])
 
+		# Entropy weight
+		self.entropy_weight = tf.Variable(entropy_weight, name="entropy_weight")
+
 		# Compute the objective (log action_vector and entropy)
 		self.obj = tf.reduce_sum(tf.multiply(
 					   tf.log(tf.reduce_sum(tf.multiply(self.out, self.acts),
@@ -67,23 +67,30 @@ class ActorNetwork(object):
 		with tf.variable_scope('actor'):
 			inputs = tflearn.input_data(shape=[None, self.s_dim[0], self.s_dim[1]])
 
-			split_0 = tflearn.conv_1d(inputs[:, 0:1, :], 128, 5, activation='relu')			# chunk size
-			split_1 = tflearn.conv_1d(inputs[:, 1:2, :], 128, 5, activation='relu')			# download duration
-			split_2 = tflearn.conv_1d(inputs[:, 2:3, :], 128, 5, activation='relu')			# buffer size
-			# split_3 = tflearn.conv_1d(inputs[:, 3:4, :], 64, 5, activation='relu')			# number of chunks
-			split_3 = tflearn.fully_connected(inputs[:, 3:4, -1], 16, activation='relu')		# Last bitrate
-			split_4 = tflearn.fully_connected(inputs[:, 4:5, -1], 16, activation='relu')		# sync  0/1
-			split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], 16, activation='relu')		# player state 0 or 1
-			split_6 = tflearn.fully_connected(inputs[:, 6:7, -5:], 64, activation='relu')	# server wait
-			split_7 = tflearn.fully_connected(inputs[:, 7:8, -5:], 64, activation='relu')	# freezing
+			# Add LSTM
+			seq_feats = tf.transpose(inputs[:, 0:3, :], perm=[0, 2, 1])  # shape=(None, timestep=8, featnum=6)
+			bilstm_0 = bidirectional_rnn(seq_feats[:, :, 0:1], BasicLSTMCell(32), BasicLSTMCell(32))
+			bilstm_1 = bidirectional_rnn(seq_feats[:, :, 1:2], BasicLSTMCell(32), BasicLSTMCell(32))
+			bilstm_2 = bidirectional_rnn(seq_feats[:, :, 2:3], BasicLSTMCell(32), BasicLSTMCell(32))
 
-			split_0_flat = tflearn.flatten(split_0)
-			split_1_flat = tflearn.flatten(split_1)
-			split_2_flat = tflearn.flatten(split_2)
-			# split_3_flat = tflearn.flatten(split_3)
-			
-			merge_net = tflearn.merge([split_0_flat, split_1_flat, split_2_flat, split_3, split_4, split_5, split_6, split_7], 'concat')
-			
+			# Original 1-D CNN
+			# split_0 = tflearn.conv_1d(inputs[:, 0:1, :], 128, 5, activation='relu')			# chunk size
+			# split_1 = tflearn.conv_1d(inputs[:, 1:2, :], 128, 5, activation='relu')			# download duration
+			# split_2 = tflearn.conv_1d(inputs[:, 2:3, :], 128, 5, activation='relu')			# buffer size
+			split_3 = tflearn.fully_connected(inputs[:, 3:4, -1], 8, activation='relu')		# Last bitrate
+			split_4 = tflearn.fully_connected(inputs[:, 4:5, -1], 8, activation='relu')		# sync  0/1
+			split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], 8, activation='relu')		# player state 0 or 1
+			split_6 = tflearn.fully_connected(inputs[:, 6:7, -5:], 32, activation='relu')	# server wait
+			split_7 = tflearn.fully_connected(inputs[:, 7:8, -5:], 32, activation='relu')	# freezing
+
+			# Original 1-D Flatten and merge
+			# split_0_flat = tflearn.flatten(split_0)
+			# split_1_flat = tflearn.flatten(split_1)
+			# split_2_flat = tflearn.flatten(split_2)
+			# merge_net = tflearn.merge([split_0_flat, split_1_flat, split_2_flat, split_3, split_4, split_5, split_6, split_7], 'concat')
+
+			merge_net = tflearn.merge([bilstm_0, bilstm_1, bilstm_2, split_3, split_4, split_5, split_6, split_7], 'concat')
+
 			# Old
 			# split_0 = tflearn.conv_1d(inputs[:, 0:1, :], 64, 4, activation='relu')			# chunk size
 			# split_1 = tflearn.conv_1d(inputs[:, 1:2, :], 64, 4, activation='relu')			# download duration
@@ -156,7 +163,7 @@ class CriticNetwork(object):
 	def __init__(self, sess, state_dim, learning_rate):
 		self.sess = sess
 		self.s_dim = state_dim
-		self.lr_rate = learning_rate
+		self.lr_rate = tf.Variable(learning_rate, name='learning_rate')
 
 		# Create the critic network
 		self.inputs, self.out = self.create_critic_network()
@@ -193,23 +200,31 @@ class CriticNetwork(object):
 	def create_critic_network(self):
 		with tf.variable_scope('critic'):
 			inputs = tflearn.input_data(shape=[None, self.s_dim[0], self.s_dim[1]])
-			split_0 = tflearn.conv_1d(inputs[:, 0:1, :], 128, 5, activation='relu')			# chunk size
-			split_1 = tflearn.conv_1d(inputs[:, 1:2, :], 128, 5, activation='relu')			# download duration
-			split_2 = tflearn.conv_1d(inputs[:, 2:3, :], 128, 5, activation='relu')			# buffer size
-			# split_3 = tflearn.conv_1d(inputs[:, 3:4, :], 64, 5, activation='relu')			# number of chunks
-			split_3 = tflearn.fully_connected(inputs[:, 3:4, -1], 16, activation='relu')		# Last bitrate
-			split_4 = tflearn.fully_connected(inputs[:, 4:5, -1], 16, activation='relu')		# sync  0/1
-			split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], 16, activation='relu')		# player state 0 or 1
-			split_6 = tflearn.fully_connected(inputs[:, 6:7, -5:], 64, activation='relu')	# server wait
-			split_7 = tflearn.fully_connected(inputs[:, 7:8, -5:], 64, activation='relu')	# freezing
 
-			split_0_flat = tflearn.flatten(split_0)
-			split_1_flat = tflearn.flatten(split_1)
-			split_2_flat = tflearn.flatten(split_2)
-			# split_3_flat = tflearn.flatten(split_3)
-			
-			merge_net = tflearn.merge([split_0_flat, split_1_flat, split_2_flat, split_3, split_4, split_5, split_6, split_7], 'concat')
-			
+			# Add LSTM
+			seq_feats = tf.transpose(inputs[:, 0:3, :], perm=[0, 2, 1])  # shape=(None, timestep=8, featnum=6)
+			bilstm_0 = bidirectional_rnn(seq_feats[:, :, 0:1], BasicLSTMCell(32), BasicLSTMCell(32))
+			bilstm_1 = bidirectional_rnn(seq_feats[:, :, 1:2], BasicLSTMCell(32), BasicLSTMCell(32))
+			bilstm_2 = bidirectional_rnn(seq_feats[:, :, 2:3], BasicLSTMCell(32), BasicLSTMCell(32))
+
+			# Original 1-D CNN
+			# split_0 = tflearn.conv_1d(inputs[:, 0:1, :], 128, 5, activation='relu')			# chunk size
+			# split_1 = tflearn.conv_1d(inputs[:, 1:2, :], 128, 5, activation='relu')			# download duration
+			# split_2 = tflearn.conv_1d(inputs[:, 2:3, :], 128, 5, activation='relu')			# buffer size
+			split_3 = tflearn.fully_connected(inputs[:, 3:4, -1], 8, activation='relu')		# Last bitrate
+			split_4 = tflearn.fully_connected(inputs[:, 4:5, -1], 8, activation='relu')		# sync  0/1
+			split_5 = tflearn.fully_connected(inputs[:, 5:6, -1], 8, activation='relu')		# player state 0 or 1
+			split_6 = tflearn.fully_connected(inputs[:, 6:7, -5:], 32, activation='relu')	# server wait
+			split_7 = tflearn.fully_connected(inputs[:, 7:8, -5:], 32, activation='relu')	# freezing
+
+			# Original 1-D Flatten and merge
+			# split_0_flat = tflearn.flatten(split_0)
+			# split_1_flat = tflearn.flatten(split_1)
+			# split_2_flat = tflearn.flatten(split_2)
+			# merge_net = tflearn.merge([split_0_flat, split_1_flat, split_2_flat, split_3, split_4, split_5, split_6, split_7], 'concat')
+
+			merge_net = tflearn.merge([bilstm_0, bilstm_1, bilstm_2, split_3, split_4, split_5, split_6, split_7], 'concat')
+
 			# Old
 			# split_0 = tflearn.conv_1d(inputs[:, 0:1, :], 64, 4, activation='relu')			# chunk size
 			# split_1 = tflearn.conv_1d(inputs[:, 1:2, :], 64, 4, activation='relu')			# download duration
