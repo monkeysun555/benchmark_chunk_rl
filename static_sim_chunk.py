@@ -102,7 +102,7 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 	server = live_server.Live_Server(seg_duration=SEG_DURATION, chunk_duration=CHUNK_DURATION, 
 										start_up_th=SERVER_START_UP_TH)
 
-	with tf.Session() as sess, open(LOG_FILE + '_' + str(int(SERVER_START_UP_TH/MS_IN_S)) +'_agent_' + str(agent_id), 'wb') as log_file:
+	with tf.Session() as sess, open(LOG_FILE + '_' + str(int(SERVER_START_UP_TH/MS_IN_S)) +'_agent_' + str(agent_id), 'w') as log_file:
 		actor = a3c.ActorNetwork(sess,
 								 state_dim=[S_INFO, S_LEN], action_dim=A_DIM,
 								 learning_rate=ACTOR_LR_RATE, entropy_weight=INITIAL_ENTROPY_WEIGHT)
@@ -380,7 +380,7 @@ def central_agent(net_params_queues, exp_queues):
 	last_entropy_weight = None
 	last_actor_learning_rate = None
 	last_critic_learning_rate = None
-	# with tf.Session() as sess, open(LOG_FILE + '_test', 'wb') as test_log_file:
+	# with tf.Session() as sess, open(LOG_FILE + '_test', 'w') as test_log_file:
 	with tf.Session() as sess:
 		actor = a3c.ActorNetwork(sess,
 									state_dim=[S_INFO, S_LEN], action_dim=A_DIM,
