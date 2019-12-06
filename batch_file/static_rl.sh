@@ -16,7 +16,7 @@ RUNDIR=$SCRATCH/low_latency_streaming/rate_version/benchmark_chunk_rl_2s
 
 cd $VIRTUALENV
 
-source ./tflearn/bin/activate
+source ./tf_learn/bin/activate
   
 cd $RUNDIR
 python static_sim_chunk.py
