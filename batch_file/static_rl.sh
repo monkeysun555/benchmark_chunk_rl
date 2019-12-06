@@ -1,10 +1,10 @@
 #!/bin/bash
 #SBATCH --nodes=1
-#SBATCH --ntasks-per-node=4
+#SBATCH --ntasks-per-node=2
 #SBATCH --cpus-per-task=4
-#SBATCH --time=2:30:00
+#SBATCH --time=24:00:00
 #SBATCH --mem=4GB
-#SBATCH --job-name=chunk_rl_js
+#SBATCH --job-name=chunk_rl_2s
 #SBATCH --mail-type=END
 #SBATCH --mail-user=ls3817@nyu.edu
 #SBATCH --output=slurm_%j.out
@@ -12,7 +12,7 @@
 module purge
 
 VIRTUALENV=$SCRATCH
-RUNDIR=$SCRATCH/CMAF/JS_model
+RUNDIR=$SCRATCH/low_latency_streaming/rate_version/benchmark_chunk_rl_2s
 
 cd $VIRTUALENV
 
