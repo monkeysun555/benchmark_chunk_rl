@@ -16,7 +16,7 @@ A_DIM = 6
 ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
 
-TEST_DURATION = 200				# Number of testing <===================== Change length here
+TEST_DURATION = 100				# Number of testing <===================== Change length here
 # BITRATE = [500.0, 2000.0, 5000.0, 8000.0, 16000.0]  # 5 actions
 BITRATE = [300.0, 500.0, 1000.0, 2000.0, 3000.0, 6000.0]
 
@@ -34,7 +34,7 @@ CHUNK_SEG_RATIO = CHUNK_DURATION/SEG_DURATION
 CHUNK_IN_SEG = SEG_DURATION/CHUNK_DURATION
 
 # Initial buffer length on server side
-SERVER_START_UP_TH = 3000.0				# <========= TO BE MODIFIED. TEST WITH DIFFERENT VALUES
+SERVER_START_UP_TH = 4000.0				# <========= TO BE MODIFIED. TEST WITH DIFFERENT VALUES
 # how user will start playing video (user buffer)
 USER_START_UP_TH = 2000.0
 # set a target latency, then use fast playing to compensate
@@ -161,7 +161,7 @@ def t_main():
 	with tf.Session() as sess:
 		if not os.path.isdir(ALL_TESTING_DIR):
 			os.makedirs(ALL_TESTING_DIR)
-		all_testing_log = open(ALL_TESTING_FILE, 'wb')
+		all_testing_log = open(ALL_TESTING_FILE, 'w')
 
 		actor = a3c.ActorNetwork(sess,
 								 state_dim=[S_INFO, S_LEN], action_dim=A_DIM,
@@ -176,7 +176,7 @@ def t_main():
 		# restore neural net parameters
 		if NN_MODEL:  
 			# NN_MODEL is the path to file
-			print NN_MODEL
+			print(NN_MODEL)
 			saver.restore(sess, NN_MODEL)
 			print("Testing model restored.")
 		else: assert 0 == 1
@@ -192,9 +192,9 @@ def t_main():
 												randomSeed=RANDOM_SEED)
 			server = live_server.Live_Server(seg_duration=SEG_DURATION, chunk_duration=CHUNK_DURATION, 
 												start_up_th=SERVER_START_UP_TH, randomSeed=RANDOM_SEED)
-			print server.get_time()
+			print(server.get_time())
 			log_path = LOG_FILE + '_' + cooked_name
-			log_file = open(log_path, 'wb')
+			log_file = open(log_path, 'w')
 
 		
 			action_num = DEFAULT_ACTION	# 0
@@ -402,7 +402,7 @@ def t_main():
 			else:
 				tp_record, time_record = new_record_tp(player.get_throughput_trace(), player.get_time_trace(), starting_time_idx, time_duration + buffer_length) 
 			
-			print(starting_time_idx, TRACE_NAME, len(player.get_throughput_trace()), player.get_time_idx(), len(tp_record), np.sum(r_batch))
+			print(starting_time_idx, cooked_name, len(player.get_throughput_trace()), player.get_time_idx(), len(tp_record), np.sum(r_batch))
 			log_file.write('\t'.join(str(tp) for tp in tp_record))
 			log_file.write('\n')
 
@@ -418,7 +418,7 @@ def t_main():
 			all_testing_log.write(str(np.sum(f_batch)) + '\t')
 			all_testing_log.write(str(np.mean(c_batch)) + '\t')
 			all_testing_log.write(str(np.mean(l_batch)) + '\t')
-			print np.sum(r_batch)
+			print(np.sum(r_batch))
 
 			all_testing_log.write('\n')
 		all_testing_log.close()
@@ -442,10 +442,10 @@ def main():
 										randomSeed=RANDOM_SEED)
 	server = live_server.Live_Server(seg_duration=SEG_DURATION, chunk_duration=CHUNK_DURATION, 
 										start_up_th=SERVER_START_UP_TH, randomSeed=RANDOM_SEED)
-	print server.get_time()
+	print(server.get_time())
 
 	log_path = LOG_FILE + '_' + TRACE_NAME
-	log_file = open(log_path, 'wb')
+	log_file = open(log_path, 'w')
 
 	with tf.Session() as sess:
 		actor = a3c.ActorNetwork(sess,
@@ -461,7 +461,7 @@ def main():
 		# restore neural net parameters
 		if NN_MODEL:  
 			# NN_MODEL is the path to file
-			print NN_MODEL
+			print(NN_MODEL)
 			saver.restore(sess, NN_MODEL)
 			print("Testing model restored.")
 		else: assert 0 == 1
@@ -480,7 +480,7 @@ def main():
 		starting_time_idx = player.get_time_idx()
 		init = 1
 		for i in range(TEST_DURATION):
-			print "Current index: ", i
+			print("Current index: ", i)
 			# print server.get_time()
 			if init: 
 				if CHUNK_IN_SEG == 5:

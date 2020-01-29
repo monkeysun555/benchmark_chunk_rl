@@ -298,9 +298,7 @@ def compute_gradients(s_batch, a_batch, r_batch, actor, critic):
 	the format is in np.array([batch_size, s/a/r_dim])
 	terminal is True when sequence ends as a terminal state
 	"""
-	# print s_batch
-	# print r_batch
-	# print a_batch
+
 	assert s_batch.shape[0] == a_batch.shape[0]
 	# print(a_batch, r_batch)
 	assert s_batch.shape[0] == r_batch.shape[0]
@@ -317,8 +315,6 @@ def compute_gradients(s_batch, a_batch, r_batch, actor, critic):
 		R_batch[t, 0] = r_batch[t] + GAMMA * R_batch[t + 1, 0]
 
 	td_batch = R_batch - v_batch
-	# print R_batch
-	# print v_batch
 	actor_gradients = actor.get_gradients(s_batch, a_batch, td_batch)
 	critic_gradients = critic.get_gradients(s_batch, R_batch)
 
