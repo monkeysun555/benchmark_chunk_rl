@@ -39,7 +39,7 @@ CHUNK_DURATION = 200.0
 CHUNK_IN_SEG = SEG_DURATION/CHUNK_DURATION
 CHUNK_SEG_RATIO = CHUNK_DURATION/SEG_DURATION
 # Initial buffer length on server side
-SERVER_START_UP_TH = 4000.0				# <========= TO BE MODIFIED. TEST WITH DIFFERENT VALUES
+SERVER_START_UP_TH = 2000.0				# <========= TO BE MODIFIED. TEST WITH DIFFERENT VALUES
 # how user will start playing video (user buffer)
 USER_START_UP_TH = 2000.0
 # set a target latency, then use fast playing to compensate
@@ -296,22 +296,22 @@ def agent(agent_id, all_cooked_time, all_cooked_bw, net_params_queue, exp_queue)
 				# else:
 				# 	playing_speed = NORMAL_PLAYING
 				entropy_record.append(a3c.compute_entropy(action_prob[0]))
-				log_file.write(str(buffer_length) + '\t' +
-								str(freezing) + '\t' +
-								str(time_out) + '\t' +
-								# str(buffer_length) + '\t' +
-								str(server_wait_time) + '\t' +
-							    str(action_prob) + '\t' +
-								str(reward) + '\n')
-				log_file.flush()
-			else:
-				log_file.write(str(buffer_length) + '\t' +
-								str(freezing) + '\t' +
-								str(time_out) + '\t' +
-								# str(buffer_length) + '\t' +
-								str(server_wait_time) + '\t' +
-								str(reward) + '\n')
-				log_file.flush()
+				#log_file.write(str(buffer_length) + '\t' +
+				#				str(freezing) + '\t' +
+				#				str(time_out) + '\t' +
+				#				# str(buffer_length) + '\t' +
+				#				str(server_wait_time) + '\t' +
+				#			    str(action_prob) + '\t' +
+				#				str(reward) + '\n')
+				#log_file.flush()
+			# else:
+				#log_file.write(str(buffer_length) + '\t' +
+				#				str(freezing) + '\t' +
+				#				str(time_out) + '\t' +
+				#				# str(buffer_length) + '\t' +
+				#				str(server_wait_time) + '\t' +
+				#				str(reward) + '\n')
+				#log_file.flush()
 
 			if len(r_batch) >= TRAIN_SEQ_LEN or video_terminate:
 				# print(r_batch)
