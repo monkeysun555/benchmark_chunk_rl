@@ -20,7 +20,7 @@ TEST_DURATION = 100				# Number of testing <===================== Change length 
 # BITRATE = [500.0, 2000.0, 5000.0, 8000.0, 16000.0]  # 5 actions
 BITRATE = [300.0, 500.0, 1000.0, 2000.0, 3000.0, 6000.0]
 
-RANDOM_SEED = 10
+RANDOM_SEED = 13
 RAND_RANGE = 1000
 BITRATE_LOW_NOISE = 0.95
 BITRATE_HIGH_NOISE = 1.05
@@ -47,7 +47,7 @@ ACTION_REWARD = 1.0 * CHUNK_SEG_RATIO
 REBUF_PENALTY = 6.0		# for second
 SMOOTH_PENALTY = 1.0
 MISSING_PENALTY = 6.0 * CHUNK_SEG_RATIO	# not included
-LONG_DELAY_PENALTY = 3.0 * CHUNK_SEG_RATIO 
+LONG_DELAY_PENALTY = 4.0 * CHUNK_SEG_RATIO 
 CONST = 6.0
 X_RATIO = 1.0
 # UNNORMAL_PLAYING_PENALTY = 1.0 * CHUNK_FRAG_RATIO
@@ -207,6 +207,7 @@ def t_main():
 			a_batch = []
 			c_batch = []
 			l_batch = []
+			j_batch = []
 			action_reward = 0.0		# Total reward is for all chunks within on segment
 			action_freezing = 0.0
 			action_wait = 0.0
@@ -362,6 +363,7 @@ def t_main():
 						f_batch.append(action_freezing)
 						a_batch.append(BITRATE[bit_rate])
 						l_batch.append(latency)
+						j_batch.append(sync)
 						# If sync, might go to medium of segment, and there is no estimated chunk size
 						action_prob = actor.predict(np.reshape(state, (1, S_INFO, S_LEN)))
 						# # Using random
@@ -418,6 +420,7 @@ def t_main():
 			all_testing_log.write(str(np.sum(f_batch)) + '\t')
 			all_testing_log.write(str(np.mean(c_batch)) + '\t')
 			all_testing_log.write(str(np.mean(l_batch)) + '\t')
+			all_testing_log.write(str(np.sum(j_batch)) + '\t')
 			print(np.sum(r_batch))
 
 			all_testing_log.write('\n')
