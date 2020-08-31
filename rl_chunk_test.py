@@ -10,7 +10,8 @@ import static_a3c_chunk as a3c
 import load
 import math
 
-IF_NEW = 0
+IF_NEW = 0			# if 1, model might be changed
+
 IF_ALL_TESTING = 1
 A_DIM = 6
 ACTOR_LR_RATE = 0.0001
@@ -34,7 +35,7 @@ CHUNK_SEG_RATIO = CHUNK_DURATION/SEG_DURATION
 CHUNK_IN_SEG = SEG_DURATION/CHUNK_DURATION
 
 # Initial buffer length on server side
-SERVER_START_UP_TH = 4000.0				# <========= TO BE MODIFIED. TEST WITH DIFFERENT VALUES
+SERVER_START_UP_TH = 2000.0				# <========= TO BE MODIFIED. TEST WITH DIFFERENT VALUES
 # how user will start playing video (user buffer)
 USER_START_UP_TH = 2000.0
 # set a target latency, then use fast playing to compensate
