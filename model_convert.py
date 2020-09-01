@@ -1,18 +1,18 @@
 import tensorflow.saved_model as sm
-import static_a3c as a3c
+import static_a3c_chunk as a3c
 import tensorflow as tf
 import os
 
 S_INFO = 8
-S_LEN = 12
+S_LEN = 15
 A_DIM = 6
 ACTOR_LR_RATE = 0.0001
 CRITIC_LR_RATE = 0.001
 NUM_AGENTS = 1
-STARTING_EPOCH = 60000
+STARTING_EPOCH = 90000
 
-NN_MODEL = 'nn_model_s_2_ep_' + str(STARTING_EPOCH) + '.ckpt'
-SM_MODEL = 'sm_2s_ep_' + str(STARTING_EPOCH)
+NN_MODEL = 'nn_model_s_0_4_ep_' + str(STARTING_EPOCH) + '.ckpt'
+SM_MODEL = 'sm_0_4s_ep_' + str(STARTING_EPOCH)
 
 def get_model_saving_location():
 	return os.path.join(os.path.dirname(os.path.relpath(__file__)),'./models/', SM_MODEL)
@@ -47,7 +47,8 @@ def main():
 					{'sig_getBr_idx': model_infer_signature}, 
 					strip_default_attrs=True)
 
-		print [str(n.name) for n in tf.get_default_graph().as_graph_def().node]
+		for n in tf.get_default_graph().as_graph_def().node:
+			print(str(n.name),'\n')
 		# print(tf.contrib.graph_editor.get_tensors(tf.get_default_graph())) 
 		# print(sess.graph.get_operations())
 		sm_saver.save()
