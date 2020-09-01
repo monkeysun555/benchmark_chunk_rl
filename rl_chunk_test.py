@@ -35,7 +35,7 @@ CHUNK_SEG_RATIO = CHUNK_DURATION/SEG_DURATION
 CHUNK_IN_SEG = SEG_DURATION/CHUNK_DURATION
 
 # Initial buffer length on server side
-SERVER_START_UP_TH = 2000.0				# <========= TO BE MODIFIED. TEST WITH DIFFERENT VALUES
+SERVER_START_UP_TH = 4000.0				# <========= TO BE MODIFIED. TEST WITH DIFFERENT VALUES
 # how user will start playing video (user buffer)
 USER_START_UP_TH = 2000.0
 # set a target latency, then use fast playing to compensate
@@ -72,7 +72,7 @@ NOR_STATE = 2.0	# 0, 1, 2
 
 S_INFO = 8	# For bw_traces
 S_LEN = 15	# For bw_Traces
-END_EPOCH =  90000				# <========================= CHANGE MODELS, 105000 is the best right now, for no sync mode, bw_traces
+END_EPOCH =  86000				# <========================= CHANGE MODELS, 105000 is the best right now, for no sync mode, bw_traces
 
 if not IF_NEW:
 	# For bw_traces
